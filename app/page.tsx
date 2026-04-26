@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   PieChart,
   Pie,
@@ -14,36 +14,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-
-type Perfil = "Conservador" | "Moderat" | "Dinàmic" | "Agressiu";
-
-type Client = {
-  nom: string;
-  edat: string;
-  ingressosMensualsNets: string;
-  despesesFixesMensuals: string;
-  despesesVariablesMensuals: string;
-  estalviMensual: string;
-  estalviLiquid: string;
-  patrimoniInvertit: string;
-  deuteTotal: string;
-  quotaMensualDeutes: string;
-  objectiuPrincipal: string;
-  importObjectiu: string;
-  horitzoAnys: string;
-  percentatgeEstalviInvertir: string;
-  coneixementFinancer: string;
-  experienciaInversora: string;
-  anysInvertint: string;
-  reaccioCaiguda10: string;
-  reaccioCaiguda25: string;
-  perduaMaximaTolerable: string;
-  tempsAguantariaPerdues: string;
-  mercatCau: string;
-  inversioPujaRapid: string;
-  frequenciaRevisio: string;
-  preferenciaESG: string;
-};
+import { calcularScoringClient, type Client, type Perfil, type ScoringResult } from "@/lib/scoring";
 
 type CarteraModel = {
   rendaVariable: number;
@@ -61,26 +32,8 @@ type ProducteCartera = {
   justificacio: string;
 };
 
-type ClientResult = {
-  row: Client;
-  scoreFinal: number;
-  scoreCapacitat: number;
-  scoreTolerancia: number;
-  scoreConeixement: number;
-  scoreHoritzo: number;
-  perfilFinal: Perfil;
-  confiança: number;
-  motius: string[];
-  alertes: string[];
+type ClientResult = ScoringResult & {
   cartera: CarteraModel;
-  metriques: {
-    ingressos: number;
-    despesesTotals: number;
-    excedentMensual: number;
-    taxaEstalvi: number;
-    ratioDeuteIngressos: number;
-    fonsEmergenciaMesos: number;
-  };
 };
 
 const COLORS = {
@@ -125,17 +78,6 @@ const initialClient: Client = {
   preferenciaESG: "indiferent",
 };
 
-function parseNumber(value?: string, fallback = 0) {
-  if (!value) return fallback;
-  const normalized = String(value).replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "");
-  const n = Number(normalized);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
 function formatEuro(value: number) {
   return new Intl.NumberFormat("ca-ES", {
     style: "currency",
@@ -146,13 +88,6 @@ function formatEuro(value: number) {
 
 function formatPct(value: number) {
   return `${(value || 0).toFixed(1)}%`;
-}
-
-function scoreToPerfil(score: number): Perfil {
-  if (score >= 80) return "Agressiu";
-  if (score >= 60) return "Dinàmic";
-  if (score >= 40) return "Moderat";
-  return "Conservador";
 }
 
 function carteraPerPerfil(perfil: Perfil): CarteraModel {
@@ -417,99 +352,10 @@ function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
 }
 
 function calcularClient(client: Client): ClientResult {
-  const ingressos = parseNumber(client.ingressosMensualsNets);
-  const fixes = parseNumber(client.despesesFixesMensuals);
-  const variables = parseNumber(client.despesesVariablesMensuals);
-  const estalviMensual = parseNumber(client.estalviMensual);
-  const estalviLiquid = parseNumber(client.estalviLiquid);
-  const quotaDeutes = parseNumber(client.quotaMensualDeutes);
-  const edat = parseNumber(client.edat);
-  const horitzo = parseNumber(client.horitzoAnys);
-  const perduaMax = parseNumber(client.perduaMaximaTolerable);
-  const anysInvertint = parseNumber(client.anysInvertint);
-
-  const despesesTotals = fixes + variables;
-  const excedentMensual = ingressos - despesesTotals - quotaDeutes;
-  const taxaEstalvi = ingressos > 0 ? (estalviMensual / ingressos) * 100 : 0;
-  const ratioDeuteIngressos = ingressos > 0 ? (quotaDeutes / ingressos) * 100 : 0;
-  const fonsEmergenciaMesos = despesesTotals > 0 ? estalviLiquid / despesesTotals : 0;
-
-  let capacitat = 50;
-  capacitat += edat < 35 ? 12 : edat < 50 ? 6 : edat < 65 ? -4 : -12;
-  capacitat += taxaEstalvi >= 30 ? 18 : taxaEstalvi >= 15 ? 10 : taxaEstalvi >= 5 ? 2 : -14;
-  capacitat += fonsEmergenciaMesos >= 9 ? 14 : fonsEmergenciaMesos >= 6 ? 10 : fonsEmergenciaMesos >= 3 ? 2 : -18;
-  capacitat += ratioDeuteIngressos <= 10 ? 10 : ratioDeuteIngressos <= 25 ? 3 : ratioDeuteIngressos <= 40 ? -8 : -22;
-  capacitat += excedentMensual > 0 ? 8 : -20;
-  capacitat = clamp(capacitat, 0, 100);
-
-  let tolerancia = 50;
-  tolerancia += client.reaccioCaiguda10 === "aportar_mes" ? 16 : client.reaccioCaiguda10 === "mantenir" ? 8 : client.reaccioCaiguda10 === "reduir_risc" ? -8 : -22;
-  tolerancia += client.reaccioCaiguda25 === "aportar_mes" ? 20 : client.reaccioCaiguda25 === "mantenir" ? 10 : client.reaccioCaiguda25 === "reduir_risc" ? -12 : -28;
-  tolerancia += perduaMax >= 30 ? 18 : perduaMax >= 20 ? 10 : perduaMax >= 10 ? 0 : -18;
-  tolerancia += client.tempsAguantariaPerdues === "mes_2_anys" ? 16 : client.tempsAguantariaPerdues === "6_24_mesos" ? 8 : client.tempsAguantariaPerdues === "1_6_mesos" ? -6 : -16;
-  tolerancia += client.mercatCau === "oportunitat" ? 16 : client.mercatCau === "mantenir" ? 8 : client.mercatCau === "reduir" ? -7 : -18;
-  tolerancia += client.inversioPujaRapid === "reequilibrar" ? 12 : client.inversioPujaRapid === "revisar" ? 8 : client.inversioPujaRapid === "mantenir" ? 2 : -6;
-  tolerancia = clamp(tolerancia, 0, 100);
-
-  let coneixement = 50;
-  coneixement += client.coneixementFinancer === "alt" ? 22 : client.coneixementFinancer === "mitja" ? 12 : client.coneixementFinancer === "basic" ? -3 : -20;
-  coneixement += client.experienciaInversora === "alta_volatilitat" ? 18 : client.experienciaInversora === "fons_etfs" ? 10 : client.experienciaInversora === "conservadors" ? -5 : -18;
-  coneixement += anysInvertint >= 5 ? 14 : anysInvertint >= 2 ? 6 : anysInvertint > 0 ? 2 : -8;
-  coneixement = clamp(coneixement, 0, 100);
-
-  let horitzoScore = 50;
-  horitzoScore += horitzo >= 15 ? 25 : horitzo >= 10 ? 18 : horitzo >= 5 ? 8 : horitzo >= 3 ? -5 : -25;
-  horitzoScore += client.objectiuPrincipal === "creixer_patrimoni" ? 12 : client.objectiuPrincipal === "jubilacio" ? 10 : client.objectiuPrincipal === "habitatge" ? -4 : 0;
-  horitzoScore = clamp(horitzoScore, 0, 100);
-
-  const scoreFinal = Math.round(capacitat * 0.35 + tolerancia * 0.3 + horitzoScore * 0.2 + coneixement * 0.15);
-  let perfilFinal = scoreToPerfil(scoreFinal);
-  const alertes: string[] = [];
-
-  if (fonsEmergenciaMesos < 3) {
-    perfilFinal = perfilFinal === "Agressiu" || perfilFinal === "Dinàmic" ? "Moderat" : perfilFinal;
-    alertes.push("Fons d’emergència inferior a 3 mesos: el model limita el risc recomanat.");
-  }
-
-  if (ratioDeuteIngressos > 40 || excedentMensual <= 0) {
-    perfilFinal = "Conservador";
-    alertes.push("La situació financera requereix prioritzar sanejament abans d’assumir risc.");
-  }
-
-  if (horitzo < 3) {
-    perfilFinal = "Conservador";
-    alertes.push("Horitzó inferior a 3 anys: no és adequat assumir alta volatilitat.");
-  }
-
-  const motius = [
-    capacitat >= 70 ? "capacitat financera elevada" : capacitat >= 45 ? "capacitat financera mitjana" : "capacitat financera limitada",
-    tolerancia >= 70 ? "tolerància psicològica alta a la volatilitat" : tolerancia >= 45 ? "tolerància psicològica moderada" : "tolerància psicològica baixa",
-    horitzo >= 10 ? "horitzó temporal llarg" : horitzo >= 5 ? "horitzó temporal mitjà" : "horitzó temporal curt",
-    fonsEmergenciaMesos >= 6 ? "fons d’emergència suficient" : "fons d’emergència ajustat",
-    taxaEstalvi >= 15 ? "taxa d’estalvi saludable" : "taxa d’estalvi moderada",
-    ratioDeuteIngressos <= 25 ? "nivell d’endeutament controlat" : "endeutament rellevant",
-  ];
-
+  const scoring = calcularScoringClient(client);
   return {
-    row: client,
-    scoreFinal,
-    scoreCapacitat: Math.round(capacitat),
-    scoreTolerancia: Math.round(tolerancia),
-    scoreConeixement: Math.round(coneixement),
-    scoreHoritzo: Math.round(horitzoScore),
-    perfilFinal,
-    confiança: alertes.length ? 92 : 98,
-    motius,
-    alertes,
-    cartera: carteraPerPerfil(perfilFinal),
-    metriques: {
-      ingressos,
-      despesesTotals,
-      excedentMensual,
-      taxaEstalvi,
-      ratioDeuteIngressos,
-      fonsEmergenciaMesos,
-    },
+    ...scoring,
+    cartera: carteraPerPerfil(scoring.perfilFinal),
   };
 }
 
