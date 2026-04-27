@@ -833,6 +833,8 @@ function Informe({
         <MonteCarloBlock mc={monteCarlo} />
       </Panel>
 
+      <MonteCarloBlock mc={monteCarlo} />
+
       <ProfessionalBox
         title="Decisió de prudència"
         text={
