@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   PieChart,
   Pie,
@@ -22,35 +22,31 @@ import {
   Legend,
 } from "recharts";
 import { calcularScoringClient, type Client, type Perfil, type ScoringResult } from "@/lib/scoring";
-
-type CarteraModel = {
-  rendaVariable: number;
-  rendaFixa: number;
-  liquiditat: number;
-  alternatius: number;
-};
-
-type ProducteCartera = {
-  id: string;
-  nom: string;
-  isin: string;
-  tickerOrientatiu: string;
-  categoria: string;
-  tipus: string;
-  gestio: "Activa" | "Indexada" | "Passiva";
-  risc: string;
-  perfilRecomanat: string;
-  rol: string;
-  blocActiu: string;
-  benchmarkRef: string;
-  terAnual?: number | null;
-  percentatge: number;
-  criteri: string;
-  justificacio: string;
-};
+import { PRODUCT_UNIVERSE, carteraPerPerfil, productesPerPerfil, type CarteraModel, type ProducteCartera, type UniverseProduct } from "@/lib/portfolio";
 
 type ClientResult = ScoringResult & {
   cartera: CarteraModel;
+};
+
+type BacktestApi = {
+  updatedAt: string;
+  dataSource: string;
+  benchmark: { composicio: Array<{ component: string; ticker: string; pes: number; rationale: string }> };
+  data: Array<{ date: string; cartera: number; benchmark: number; carteraDD: number; benchmarkDD: number }>;
+  metrics: { rendibilitatAnualitzada: number; volatilitat: number; maxDrawdown: number; sharpe: number; rendimentAcumulat: number };
+  benchmarkMetrics: { rendibilitatAnualitzada: number; volatilitat: number; maxDrawdown: number; sharpe: number; rendimentAcumulat: number };
+  riskReturn: Array<{ nom: string; risc: number; rendiment: number; pes: number; serie: string }>;
+  correlations: Array<{ x: string; y: string; value: number }>;
+  riskContribution: Array<{ nom: string; contribucio: number }>;
+  availability: { ambDades: string[]; pendents: string[]; limitacions: string };
+};
+
+type PortfolioMetricsApi = {
+  monteCarlo: {
+    trajectoria: Array<{ any: number; pessimista: number; esperat: number; optimista: number }>;
+    percentils: { p10: number; p50: number; p90: number };
+    params: { rendibilitatAnual: number; volatilitatAnual: number };
+  };
 };
 
 const COLORS = {
@@ -105,146 +101,6 @@ function formatEuro(value: number) {
 
 function formatPct(value: number) {
   return `${(value || 0).toFixed(1)}%`;
-}
-
-function carteraPerPerfil(perfil: Perfil): CarteraModel {
-  if (perfil === "Conservador") return { rendaVariable: 20, rendaFixa: 65, liquiditat: 10, alternatius: 5 };
-  if (perfil === "Moderat") return { rendaVariable: 45, rendaFixa: 45, liquiditat: 5, alternatius: 5 };
-  if (perfil === "Dinàmic") return { rendaVariable: 70, rendaFixa: 20, liquiditat: 5, alternatius: 5 };
-  return { rendaVariable: 90, rendaFixa: 5, liquiditat: 0, alternatius: 5 };
-}
-
-type UniverseProduct = {
-  id: string;
-  nom: string;
-  isin: string;
-  tickerOrientatiu: string;
-  categoria: string;
-  tipus: string;
-  gestio?: "Activa" | "Indexada" | "Passiva";
-  risc: "Baix" | "Mitjà" | "Alt" | "Molt alt";
-  perfils: Perfil[];
-  rol: "Core" | "Satellite" | "Thematic/high risk" | "Income/dividend" | "Defensive/liquidity";
-  blocActiu: "Renda variable" | "Renda fixa" | "Liquiditat" | "Alternatius";
-  terAnual?: number | null;
-};
-
-const PRODUCT_UNIVERSE: UniverseProduct[] = [
-  { id: "world-core", nom: "Fons indexat global ACWI", isin: "pendent de validació", tickerOrientatiu: "Global ACWI Fund", categoria: "Global Equity", tipus: "Fons indexat", gestio: "Indexada", risc: "Mitjà", perfils: ["Conservador", "Moderat", "Dinàmic", "Agressiu"], rol: "Core", blocActiu: "Renda variable", terAnual: 0.2 },
-  { id: "aggh", nom: "Fons indexat renda fixa global coberta EUR", isin: "IE00BDBRDM35", tickerOrientatiu: "AGGH-like fund", categoria: "Global Bonds", tipus: "Fons indexat", gestio: "Indexada", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Renda fixa", terAnual: 0.14 },
-  { id: "ibgs", nom: "Fons indexat bons governamentals EUR curt termini", isin: "IE00B3VTMJ91", tickerOrientatiu: "Euro Gov 1-3Y fund", categoria: "Government Bonds", tipus: "Fons indexat", gestio: "Indexada", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa", terAnual: 0.1 },
-  { id: "cash", nom: "Fons monetari EUR", isin: "N/D", tickerOrientatiu: "Monetari EUR", categoria: "Liquidity", tipus: "Fons monetari", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Liquiditat", terAnual: 0.08 },
-  { id: "reits", nom: "ETF REIT global", isin: "N/D", tickerOrientatiu: "IWDP", categoria: "Real Estate", tipus: "ETF", risc: "Mitjà", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Alternatius" },
-  { id: "small-eu", nom: "Invesco Continental European Small Cap Equity A EUR Acc", isin: "LU2305834041", tickerOrientatiu: "Invesco Small Cap EU", categoria: "Europa Small Caps", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
-  { id: "small-global-vg", nom: "Vanguard Global Small-Cap Index Fund EUR Acc", isin: "IE00B42W4L06", tickerOrientatiu: "Vanguard Small Cap", categoria: "Global Small Caps", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", terAnual: 0.29 },
-  { id: "small-global-ish", nom: "iShares MSCI World Small Cap UCITS ETF USD Acc", isin: "N/D", tickerOrientatiu: "IUSN", categoria: "Global Small Caps", tipus: "ETF", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
-  { id: "em-vg", nom: "Vanguard Emerging Markets Stock Index Fund EUR", isin: "IE0031786696", tickerOrientatiu: "Vanguard EM", categoria: "Mercats emergents", tipus: "Fons indexat", risc: "Alt", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", terAnual: 0.22 },
-  { id: "asia-active", nom: "Federated Hermes Asia ex-Japan Equity Fund Class F Acc", isin: "IE00B8H6X308", tickerOrientatiu: "Hermes Asia ex-Japan", categoria: "Àsia ex-Japó", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
-  { id: "nasdaq-my", nom: "MyInvestor Nasdaq-100", isin: "N/D", tickerOrientatiu: "Nasdaq-100", categoria: "NASDAQ 100", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", terAnual: 0.3 },
-  { id: "qqq", nom: "Invesco QQQ Trust Series 1 ETF", isin: "US46090E1038", tickerOrientatiu: "QQQ", categoria: "NASDAQ 100", tipus: "ETF", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
-  { id: "ai-polar", nom: "Polar Capital Artificial Intelligence Fund I Acc", isin: "IE00BF0GL329", tickerOrientatiu: "Polar AI", categoria: "Tecnologia i IA", tipus: "Fons", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", terAnual: 1.15 },
-  { id: "tech-polar", nom: "Polar Capital Global Technology Fund R", isin: "IE00BM95B621", tickerOrientatiu: "Polar Tech", categoria: "Tecnologia global", tipus: "Fons", risc: "Molt alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
-  { id: "tech-fidelity", nom: "Fidelity Funds Global Technology Fund A-Acc-EUR Hedged", isin: "LU1841614867", tickerOrientatiu: "Fidelity Tech Hedged", categoria: "Tecnologia global", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
-  { id: "biotech", nom: "Polar Capital Biotech R Inc", isin: "IE00B3VXGD32", tickerOrientatiu: "Polar Biotech", categoria: "Innovació sanitària", tipus: "Fons", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
-  { id: "energy-bgf", nom: "BlackRock Global Funds World Energy Fund D2 EUR", isin: "LU0252963896", tickerOrientatiu: "BGF World Energy", categoria: "Energia", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", terAnual: 1.02 },
-  { id: "energy-vg", nom: "Vanguard Energy Fund Investor Shares", isin: "US9219081091", tickerOrientatiu: "VGENX", categoria: "Energia", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
-  { id: "gold-miners", nom: "DWS Invest Gold and Precious Metals Equities LC", isin: "LU0273159177", tickerOrientatiu: "DWS Gold Miners", categoria: "Mineres / Or", tipus: "Fons", risc: "Molt alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Alternatius" },
-  { id: "china-index", nom: "Pictet China Index P EUR", isin: "LU0625737910", tickerOrientatiu: "Pictet China", categoria: "Xina", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
-  { id: "div-jpm", nom: "JPMorgan Investment Funds Global Dividend Fund A div EUR", isin: "LU0714179727", tickerOrientatiu: "JPM Global Dividend", categoria: "Dividends", tipus: "Fons", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable", terAnual: 0.95 },
-  { id: "div-vg", nom: "Vanguard Global Equity Income Fund", isin: "N/D", tickerOrientatiu: "Vanguard Equity Income", categoria: "Dividends", tipus: "Fons", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable", terAnual: 0.32 },
-  { id: "oil-gas-ish", nom: "iShares Oil & Gas Exploration & Production", isin: "N/D", tickerOrientatiu: "iShares Oil&Gas", categoria: "Energia", tipus: "ETF", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
-  { id: "robotics", nom: "Global X Robotics & Artificial Intelligence ETF", isin: "N/D", tickerOrientatiu: "BOTZ", categoria: "Tecnologia i IA", tipus: "ETF", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
-];
-
-const PROFILE_SELECTION: Record<Perfil, Array<{ id: string; percentatge: number; criteri: string; justificacio: string }>> = {
-  Conservador: [
-    { id: "cash", percentatge: 18, criteri: "Reserva de liquiditat", justificacio: "Cobertura d’imprevistos i reducció del risc de venda forçada." },
-    { id: "ibgs", percentatge: 37, criteri: "Defensa de curta durada", justificacio: "Durada moderada i baixa sensibilitat a tipus d’interès." },
-    { id: "aggh", percentatge: 30, criteri: "Estabilització global", justificacio: "Bloc principal de renda fixa amb volatilitat continguda." },
-    { id: "world-core", percentatge: 10, criteri: "Renda variable mínima", justificacio: "Exposició global limitada per preservar capital." },
-    { id: "div-jpm", percentatge: 5, criteri: "Income prudent", justificacio: "Petit complement de rendes en perfil conservador." },
-  ],
-  Moderat: [
-    { id: "world-core", percentatge: 33, criteri: "Nucli global", justificacio: "Motor principal de creixement equilibrat." },
-    { id: "aggh", percentatge: 30, criteri: "Estabilització", justificacio: "Redueix la volatilitat total de cartera." },
-    { id: "ibgs", percentatge: 15, criteri: "Durada curta", justificacio: "Amortidor en entorns de tipus d’interès." },
-    { id: "em-vg", percentatge: 8, criteri: "Creixement emergent", justificacio: "Potencial estructural amb pes limitat." },
-    { id: "div-vg", percentatge: 6, criteri: "Income", justificacio: "Component de dividends per estabilitzar retorns." },
-    { id: "cash", percentatge: 5, criteri: "Liquiditat tàctica", justificacio: "Marge per reequilibris." },
-    { id: "reits", percentatge: 3, criteri: "Diversificació real asset", justificacio: "Petit satèl·lit immobiliari." },
-  ],
-  Dinàmic: [
-    { id: "world-core", percentatge: 38, criteri: "Core global", justificacio: "Base principal de renda variable global." },
-    { id: "em-vg", percentatge: 14, criteri: "Emergents", justificacio: "Creixement addicional a llarg termini." },
-    { id: "small-global-vg", percentatge: 12, criteri: "Small caps", justificacio: "Prima de mida i diversificació." },
-    { id: "nasdaq-my", percentatge: 10, criteri: "Tecnologia moderada", justificacio: "Exposició tecnològica controlada." },
-    { id: "aggh", percentatge: 10, criteri: "Control de risc", justificacio: "Bloc de renda fixa reduït però estabilitzador." },
-    { id: "reits", percentatge: 5, criteri: "Alternatiu líquid", justificacio: "Diversificació de fonts de retorn." },
-    { id: "div-jpm", percentatge: 5, criteri: "Income quality", justificacio: "Empreses madures amb dividends." },
-    { id: "cash", percentatge: 6, criteri: "Gestió tàctica", justificacio: "Reserva per reequilibris i oportunitats." },
-  ],
-  Agressiu: [
-    { id: "world-core", percentatge: 32, criteri: "Core global", justificacio: "Base principal amb elevada exposició a creixement global." },
-    { id: "em-vg", percentatge: 16, criteri: "Emergents", justificacio: "Potencial elevat amb volatilitat superior." },
-    { id: "small-global-vg", percentatge: 14, criteri: "Small caps", justificacio: "Més beta i potencial de llarg termini." },
-    { id: "nasdaq-my", percentatge: 12, criteri: "Tecnologia", justificacio: "Exposició forta a tecnologia nord-americana." },
-    { id: "ai-polar", percentatge: 10, criteri: "IA temàtica", justificacio: "Satèl·lit d’alt risc per disrupció." },
-    { id: "energy-bgf", percentatge: 8, criteri: "Sectorial energia", justificacio: "Satèl·lit cíclic per diversificar drivers de retorn." },
-    { id: "aggh", percentatge: 5, criteri: "Renda fixa residual", justificacio: "Mínim coixí defensiu." },
-    { id: "cash", percentatge: 3, criteri: "Liquiditat mínima", justificacio: "Reserva operativa bàsica." },
-  ],
-};
-
-function benchmarkPerCategoria(categoria: string) {
-  if (categoria.includes("Global Equity")) return "MSCI ACWI Index";
-  if (categoria.includes("Global Bonds")) return "Bloomberg Global Aggregate Bond EUR Hedged";
-  if (categoria.includes("Government Bonds")) return "ICE BofA Euro Government 1-3Y";
-  if (categoria.includes("Liquidity")) return "€STR";
-  if (categoria.includes("Real Estate")) return "FTSE EPRA/NAREIT Global REIT";
-  if (categoria.includes("Small Caps")) return "MSCI World Small Cap";
-  if (categoria.includes("emergents") || categoria.includes("Mercats emergents")) return "MSCI Emerging Markets";
-  if (categoria.includes("NASDAQ")) return "NASDAQ-100";
-  if (categoria.includes("Tecnologia")) return "MSCI World Information Technology";
-  if (categoria.includes("Energia")) return "MSCI World Energy";
-  if (categoria.includes("Dividends")) return "MSCI World High Dividend Yield";
-  if (categoria.includes("Xina")) return "MSCI China";
-  return "Benchmark sectorial equivalent";
-}
-
-function gestioPerTipus(producte: UniverseProduct): "Activa" | "Indexada" | "Passiva" {
-  if (producte.gestio) return producte.gestio;
-  if (producte.tipus.toLowerCase().includes("index")) return "Indexada";
-  if (producte.tipus.toLowerCase().includes("etf")) return "Passiva";
-  return "Activa";
-}
-
-function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
-  const picks = PROFILE_SELECTION[perfil];
-  return picks
-    .slice(0, 8)
-    .map((pick) => {
-      const producte = PRODUCT_UNIVERSE.find((x) => x.id === pick.id);
-      if (!producte) return null;
-      return {
-        id: producte.id,
-        nom: producte.nom,
-        isin: producte.isin,
-        tickerOrientatiu: producte.tickerOrientatiu,
-        categoria: producte.categoria,
-        tipus: producte.tipus,
-        gestio: gestioPerTipus(producte),
-        risc: producte.risc,
-        perfilRecomanat: producte.perfils.join(", "),
-        rol: producte.rol,
-        blocActiu: producte.blocActiu,
-        benchmarkRef: benchmarkPerCategoria(producte.categoria),
-        terAnual: producte.terAnual ?? null,
-        percentatge: pick.percentatge,
-        criteri: pick.criteri,
-        justificacio: pick.justificacio,
-      } satisfies ProducteCartera;
-    })
-    .filter((x): x is ProducteCartera => Boolean(x));
 }
 
 function calcularClient(client: Client): ClientResult {
@@ -500,6 +356,10 @@ export default function Home() {
   const [resultat, setResultat] = useState<ClientResult | null>(null);
   const [error, setError] = useState("");
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [marketLoading, setMarketLoading] = useState(false);
+  const [marketError, setMarketError] = useState("");
+  const [backtestData, setBacktestData] = useState<BacktestApi | null>(null);
+  const [metricsData, setMetricsData] = useState<PortfolioMetricsApi | null>(null);
 
   const update = (key: keyof Client, value: string) => setClient({ ...client, [key]: value });
 
@@ -524,6 +384,33 @@ export default function Home() {
     setError("");
     setResultat(calcularClient(client));
   };
+
+  useEffect(() => {
+    if (!resultat) return;
+    const fetchMarket = async () => {
+      setMarketLoading(true);
+      setMarketError("");
+      try {
+        const backtestRes = await fetch(`/api/backtest?perfil=${encodeURIComponent(resultat.perfilFinal)}`);
+        const backtestJson = await backtestRes.json();
+        if (!backtestRes.ok || backtestJson.status !== "ok") throw new Error(backtestJson.message || "Error de backtest");
+        setBacktestData(backtestJson);
+
+        const annualContribution = Math.max(0, resultat.metriques.excedentMensual * 12 * 0.4);
+        const metricsRes = await fetch(
+          `/api/portfolio-metrics?perfil=${encodeURIComponent(resultat.perfilFinal)}&horizon=${encodeURIComponent(resultat.row.horitzoAnys || "10")}&annualContribution=${annualContribution}`,
+        );
+        const metricsJson = await metricsRes.json();
+        if (!metricsRes.ok || metricsJson.status !== "ok") throw new Error(metricsJson.message || "Error de mètriques");
+        setMetricsData(metricsJson);
+      } catch (e) {
+        setMarketError(e instanceof Error ? e.message : "No s'han pogut actualitzar les dades de mercat.");
+      } finally {
+        setMarketLoading(false);
+      }
+    };
+    fetchMarket();
+  }, [resultat]);
 
   const pieData = resultat
     ? [
@@ -791,7 +678,9 @@ export default function Home() {
 
             <section className="mt-5">
               <Panel title="4. Informe financer personalitzat">
-                <Informe result={resultat} onGeneratePdf={handleGeneratePdf} generatingPdf={generatingPdf} />
+                {marketLoading && <Alert text="Actualitzant dades de mercat..." />}
+                {marketError && <Alert text={`Error de dades de mercat: ${marketError}`} />}
+                <Informe result={resultat} onGeneratePdf={handleGeneratePdf} generatingPdf={generatingPdf} backtestData={backtestData} metricsData={metricsData} />
               </Panel>
             </section>
           </>
@@ -801,7 +690,7 @@ export default function Home() {
       {resultat && (
         <div style={{ position: "fixed", left: -10000, top: 0, width: 1100, background: "#fff", padding: 24, zIndex: -1 }} aria-hidden="true">
           <div id="pdf-report">
-            <PdfReportDocument result={resultat} />
+            <PdfReportDocument result={resultat} backtestData={backtestData} metricsData={metricsData} />
           </div>
         </div>
       )}
@@ -813,23 +702,63 @@ function Informe({
   result,
   onGeneratePdf,
   generatingPdf,
+  backtestData,
+  metricsData,
 }: {
   result: ClientResult;
   onGeneratePdf: () => void;
   generatingPdf: boolean;
+  backtestData: BacktestApi | null;
+  metricsData: PortfolioMetricsApi | null;
 }) {
   const productes = productesPerPerfil(result.perfilFinal);
-  const backtest = generarBacktestSimulat(result.perfilFinal);
-  const benchmark = benchmarkCompost(result.perfilFinal);
+  const backtest = backtestData
+    ? {
+        data: backtestData.data.map((d, idx) => ({ any: idx === 0 ? "Inici" : d.date, cartera: d.cartera, benchmark: d.benchmark })),
+        metrics: backtestData.metrics,
+        benchmarkMetrics: backtestData.benchmarkMetrics,
+      }
+    : generarBacktestSimulat(result.perfilFinal);
+  const benchmark = backtestData
+    ? {
+        composicio: backtestData.benchmark.composicio.map((c) => ({ component: c.component, pes: c.pes, r: 0, v: 0 })),
+        rendibilitat: backtestData.benchmarkMetrics.rendibilitatAnualitzada,
+        volatilitat: backtestData.benchmarkMetrics.volatilitat,
+      }
+    : benchmarkCompost(result.perfilFinal);
   const blocData = productesPerBloc(productes);
-  const riscReturn = riscVsRendibilitat(productes);
-  const drawdowns = drawdownSeries(backtest);
-  const monteCarlo = simulacioMonteCarlo(result);
+  const riscReturn = backtestData?.riskReturn ?? riscVsRendibilitat(productes);
+  const drawdowns = backtestData
+    ? backtestData.data.map((d, idx) => ({ any: idx === 0 ? "Inici" : d.date, carteraDD: d.carteraDD, benchmarkDD: d.benchmarkDD }))
+    : drawdownSeries(backtest);
+  const monteCarlo = metricsData
+    ? {
+        trajectoria: metricsData.monteCarlo.trajectoria,
+        probAssolir:
+          Number(result.row.importObjectiu || 0) > 0
+            ? Math.round(
+                Math.max(
+                  0,
+                  Math.min(100, (metricsData.monteCarlo.percentils.p50 / Number(result.row.importObjectiu || 1)) * 100),
+                ),
+              )
+            : 0,
+        valorFinalEsperat: metricsData.monteCarlo.percentils.p50,
+        rang: { min: metricsData.monteCarlo.percentils.p10, max: metricsData.monteCarlo.percentils.p90 },
+        anys: metricsData.monteCarlo.trajectoria.length - 1,
+      }
+    : simulacioMonteCarlo(result);
   const compClasse = comparacioClasseActiu(result.cartera, benchmark);
   const taulaComparacio = metriquesComparatives(backtest, benchmark);
   const bulletsPerfil = notesPerfil(result.perfilFinal);
   const costos = analisiCostos(productes);
-  const dades = estatDadesMercat();
+  const dades = backtestData
+    ? {
+        font: backtestData.dataSource,
+        actualitzacio: new Date(backtestData.updatedAt).toLocaleString("ca-ES"),
+        nota: `${backtestData.availability.limitacions} Rendiments passats no garanteixen rendiments futurs.`,
+      }
+    : estatDadesMercat();
   const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id));
 
   return (
@@ -868,7 +797,7 @@ function Informe({
               p.costPonderat !== null ? `${p.costPonderat.toFixed(3)}%` : "-",
               p.rol,
               p.benchmarkRef,
-              p.justificacio,
+              p.dataAvailable ? p.justificacio : `${p.justificacio} (només informatiu, pendent de validació de dades)`,
             ])}
           />
         </div>
@@ -935,6 +864,8 @@ function Informe({
           riscReturn={riscReturn}
           drawdowns={drawdowns}
           benchmark={benchmark}
+          correlations={backtestData?.correlations ?? []}
+          riskContribution={backtestData?.riskContribution ?? []}
         />
       </Panel>
 
@@ -954,6 +885,16 @@ function Informe({
           <strong>Font actual:</strong> {dades.font}.<br />
           <strong>Actualització:</strong> {dades.actualitzacio}.<br />
           {dades.nota}
+          {backtestData && (
+            <>
+              <br />
+              <strong>Productes amb dades disponibles:</strong> {backtestData.availability.ambDades.join(", ") || "Cap"}.
+              <br />
+              <strong>Productes pendents de validació:</strong> {backtestData.availability.pendents.join(", ") || "Cap"}.
+              <br />
+              <strong>Avís:</strong> eina de suport a la decisió i simulació educativa/professional; no constitueix recomanació d’inversió personalitzada regulada.
+            </>
+          )}
         </div>
       </Panel>
 
@@ -976,13 +917,41 @@ function Informe({
   );
 }
 
-function PdfReportDocument({ result }: { result: ClientResult }) {
+function PdfReportDocument({ result, backtestData, metricsData }: { result: ClientResult; backtestData: BacktestApi | null; metricsData: PortfolioMetricsApi | null }) {
   const productes = productesPerPerfil(result.perfilFinal);
-  const benchmark = benchmarkCompost(result.perfilFinal);
-  const backtest = generarBacktestSimulat(result.perfilFinal);
+  const benchmark = backtestData
+    ? {
+        composicio: backtestData.benchmark.composicio.map((c) => ({ component: c.component, pes: c.pes, r: 0, v: 0 })),
+        rendibilitat: backtestData.benchmarkMetrics.rendibilitatAnualitzada,
+        volatilitat: backtestData.benchmarkMetrics.volatilitat,
+      }
+    : benchmarkCompost(result.perfilFinal);
+  const backtest = backtestData
+    ? {
+        data: backtestData.data.map((d, idx) => ({ any: idx === 0 ? "Inici" : d.date, cartera: d.cartera, benchmark: d.benchmark })),
+        metrics: backtestData.metrics,
+        benchmarkMetrics: backtestData.benchmarkMetrics,
+      }
+    : generarBacktestSimulat(result.perfilFinal);
   const compClasse = comparacioClasseActiu(result.cartera, benchmark);
   const taulaComparacio = metriquesComparatives(backtest, benchmark);
-  const mc = simulacioMonteCarlo(result);
+  const mc = metricsData
+    ? {
+        trajectoria: metricsData.monteCarlo.trajectoria,
+        probAssolir:
+          Number(result.row.importObjectiu || 0) > 0
+            ? Math.round(
+                Math.max(
+                  0,
+                  Math.min(100, (metricsData.monteCarlo.percentils.p50 / Number(result.row.importObjectiu || 1)) * 100),
+                ),
+              )
+            : 0,
+        valorFinalEsperat: metricsData.monteCarlo.percentils.p50,
+        rang: { min: metricsData.monteCarlo.percentils.p10, max: metricsData.monteCarlo.percentils.p90 },
+        anys: metricsData.monteCarlo.trajectoria.length - 1,
+      }
+    : simulacioMonteCarlo(result);
   const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id)).slice(0, 5);
 
   return (
@@ -1006,7 +975,7 @@ function PdfReportDocument({ result }: { result: ClientResult }) {
         <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Cartera recomanada (productes finals)</h2>
         <SimpleTable
           headers={["Classe d’actiu", "Producte", "ISIN", "Tipus", "Gestió", "Pes", "Rol", "Benchmark", "Funció"]}
-          rows={productes.map((p) => [p.blocActiu, p.nom, p.isin || "pendent de validació", p.tipus, p.gestio, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.justificacio])}
+          rows={productes.map((p) => [p.blocActiu, p.nom, p.isin || "pendent de validació", p.tipus, p.gestio, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.dataAvailable ? p.justificacio : "Només informatiu: pendent de validació de dades"])}
         />
       </section>
 
@@ -1132,9 +1101,9 @@ function MonteCarloBlock({ mc }: { mc: ReturnType<typeof simulacioMonteCarlo> })
       <SimpleTable
         headers={["Mètrica", "Resultat"]}
         rows={[
-          ["Escenari pessimista (final)", formatEuro(mc.rang.min)],
-          ["Escenari esperat (final)", formatEuro(mc.valorFinalEsperat)],
-          ["Escenari optimista (final)", formatEuro(mc.rang.max)],
+          ["Percentil P10 (final)", formatEuro(mc.rang.min)],
+          ["Percentil P50 (final)", formatEuro(mc.valorFinalEsperat)],
+          ["Percentil P90 (final)", formatEuro(mc.rang.max)],
           ["Probabilitat estimada d’assolir l’objectiu", `${mc.probAssolir}%`],
           ["Valor final estimat de cartera", formatEuro(mc.valorFinalEsperat)],
           ["Rang de resultats possibles", `${formatEuro(mc.rang.min)} - ${formatEuro(mc.rang.max)}`],
@@ -1194,13 +1163,13 @@ function FinalConclusion({ result }: { result: ClientResult }) {
 function BenchmarkCompostBox({ benchmark }: { benchmark: ReturnType<typeof benchmarkCompost> }) {
   return (
     <div style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, padding: 18 }}>
-      <h3 style={sectionTitle}>Benchmark compost acadèmic</h3>
+      <h3 style={sectionTitle}>Benchmark compost per perfil</h3>
       <p style={paragraph}>
-        El benchmark no és un únic índex; és una combinació ponderada d’índexs representatius segons perfil. Això evita comparar una cartera conservadora amb un índex 100% accions i millora la consistència metodològica en la defensa acadèmica.
+        El benchmark no és un únic índex; és una combinació ponderada d’índexs/ETFs reals representatius segons perfil de risc. Això millora la comparabilitat entre cartera i mercat de referència.
       </p>
       <SimpleTable
-        headers={["Component de benchmark", "Pes", "Rendibilitat esperada", "Volatilitat estimada"]}
-        rows={benchmark.composicio.map((c) => [c.component, `${c.pes}%`, formatPct(c.r), formatPct(c.v)])}
+        headers={["Component de benchmark", "Pes", "Rendibilitat anualitzada", "Volatilitat anualitzada"]}
+        rows={benchmark.composicio.map((c) => [c.component, `${c.pes}%`, c.r ? formatPct(c.r) : "-", c.v ? formatPct(c.v) : "-"])}
       />
       <div style={{ height: "clamp(220px, 46vw, 280px)", marginTop: 10 }}>
         <ResponsiveContainer>
@@ -1258,6 +1227,8 @@ function ProfessionalCharts({
   riscReturn,
   drawdowns,
   benchmark,
+  correlations,
+  riskContribution,
 }: {
   blocData: Array<{ bloc: string; pes: number }>;
   productes: ProducteCartera[];
@@ -1265,6 +1236,8 @@ function ProfessionalCharts({
   riscReturn: Array<{ nom: string; risc: number; rendiment: number; pes: number; serie: string }>;
   drawdowns: Array<{ any: string; carteraDD: number; benchmarkDD: number }>;
   benchmark: ReturnType<typeof benchmarkCompost>;
+  correlations: Array<{ x: string; y: string; value: number }>;
+  riskContribution: Array<{ nom: string; contribucio: number }>;
 }) {
   const comparacio = [
     { serie: "Cartera", rendibilitat: backtest.metrics.rendibilitatAnualitzada, volatilitat: backtest.metrics.volatilitat, drawdown: backtest.metrics.maxDrawdown },
@@ -1345,7 +1318,7 @@ function ProfessionalCharts({
       </div>
 
       <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
-        <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Rendiment històric simulat (cartera vs benchmark)</h4>
+        <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Evolució històrica real (cartera vs benchmark)</h4>
         <div style={{ height: "clamp(230px, 50vw, 310px)" }}>
           <ResponsiveContainer>
             <LineChart data={backtest.data}>
@@ -1377,6 +1350,33 @@ function ProfessionalCharts({
           </ResponsiveContainer>
         </div>
       </div>
+
+      {!!riskContribution.length && (
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Contribució de risc per actiu</h4>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
+            <ResponsiveContainer>
+              <BarChart data={riskContribution}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="nom" />
+                <YAxis tickFormatter={(v) => `${Number(v).toFixed(0)}%`} />
+                <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
+                <Bar dataKey="contribucio" fill={COLORS.danger} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {!!correlations.length && (
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Matriu de correlacions (parelles principals)</h4>
+          <SimpleTable
+            headers={["Actiu A", "Actiu B", "Correlació"]}
+            rows={correlations.slice(0, 12).map((c) => [c.x, c.y, c.value.toFixed(2)])}
+          />
+        </div>
+      )}
     </div>
   );
 }
