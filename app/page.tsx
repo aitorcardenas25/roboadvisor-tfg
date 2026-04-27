@@ -769,6 +769,24 @@ function Informe({ result }: { result: ClientResult }) {
         <MonteCarloBlock mc={monteCarlo} />
       </Panel>
 
+      <Panel title="Visualització professional de la cartera">
+        <ProfessionalCharts
+          blocData={blocData}
+          productes={productes}
+          backtest={backtest}
+          riscReturn={riscReturn}
+          drawdowns={drawdowns}
+          benchmark={benchmark}
+        />
+      </Panel>
+
+      <div>
+        <h3 style={sectionTitle}>Univers complementari</h3>
+        <ProductGroups alternatives={alternatives} />
+      </div>
+
+      <MonteCarloBlock mc={monteCarlo} />
+
       <ProfessionalBox
         title="Decisió de prudència"
         text={
