@@ -15,6 +15,7 @@ export type UniverseProduct = {
   tickerYahoo?: string;
   tickerFMP?: string;
   benchmarkTicker?: string;
+  gestora?: string;
   categoria: string;
   tipus: string;
   gestio?: "Activa" | "Indexada" | "Passiva";
@@ -39,6 +40,7 @@ export type ProducteCartera = {
   tickerOrientatiu: string;
   tickerYahoo?: string;
   tickerFMP?: string;
+  gestora?: string;
   categoria: string;
   tipus: string;
   gestio: "Activa" | "Indexada" | "Passiva";
@@ -69,43 +71,48 @@ export const PRODUCT_UNIVERSE: UniverseProduct[] = [
   { id: "energy-bgf", nom: "BlackRock World Energy Fund", isin: "LU0252963896", tickerOrientatiu: "BGF World Energy", categoria: "Energia", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "no_data", ongoingCost: 1.02 },
   { id: "div-jpm", nom: "JPM Global Dividend", isin: "LU0714179727", tickerOrientatiu: "JPM Global Dividend", categoria: "Dividends", tipus: "Fons actiu", risc: "Mitjà", perfils: ["Conservador", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "no_data", ongoingCost: 0.95 },
   { id: "div-vg", nom: "Vanguard FTSE All-World High Dividend", isin: "IE00B8GKDB10", tickerOrientatiu: "VHYL", tickerYahoo: "VHYL.L", tickerFMP: "VHYL.L", benchmarkTicker: "VHYL.L", categoria: "Dividends", tipus: "ETF", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable", currency: "USD", exchange: "LSE", provider: "yahoo", dataAvailable: true, dataStatus: "validated", ongoingCost: 0.29 },
+  { id: "fund-global-equity", nom: "Vanguard Global Stock Index Fund Investor EUR", isin: "IE00B03HD191", tickerOrientatiu: "Vanguard Global Stock Fund", tickerYahoo: "0P0000YENP.F", gestora: "Vanguard", categoria: "Global Equity", tipus: "Fons indexat", risc: "Mitjà", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Core", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "yahoo", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.18 },
+  { id: "fund-global-bond", nom: "PIMCO GIS Global Bond Fund", isin: "IE00B11XZ103", tickerOrientatiu: "PIMCO Global Bond", gestora: "PIMCO", categoria: "Global Bonds", tipus: "Fons actiu", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.55 },
+  { id: "fund-short-bond", nom: "JPM Euro Short Duration Bond Fund", isin: "LU0159052710", tickerOrientatiu: "JPM Short Duration Bond", gestora: "J.P. Morgan AM", categoria: "Government Bonds", tipus: "Fons actiu", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.45 },
+  { id: "fund-emerging", nom: "Fidelity Emerging Markets Fund", isin: "LU0048575426", tickerOrientatiu: "Fidelity EM Fund", gestora: "Fidelity", categoria: "Mercats emergents", tipus: "Fons actiu", risc: "Alt", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", currency: "USD", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.95 },
+  { id: "fund-tech", nom: "BlackRock Global Funds World Technology", isin: "LU0171310443", tickerOrientatiu: "BGF World Technology", gestora: "BlackRock", categoria: "Tecnologia global", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", currency: "USD", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "no_data", ongoingCost: 1.2 },
 ];
 
 export const PROFILE_SELECTION: Record<Perfil, Array<{ id: string; percentatge: number; criteri: string; justificacio: string }>> = {
   Conservador: [
     { id: "cash", percentatge: 18, criteri: "Reserva de liquiditat", justificacio: "Cobertura d’imprevistos i reducció del risc de venda forçada." },
-    { id: "ibgs", percentatge: 37, criteri: "Defensa de curta durada", justificacio: "Durada moderada i baixa sensibilitat a tipus d’interès." },
-    { id: "aggh", percentatge: 30, criteri: "Estabilització global", justificacio: "Bloc principal de renda fixa amb volatilitat continguda." },
-    { id: "world-core", percentatge: 10, criteri: "Renda variable mínima", justificacio: "Exposició global limitada per preservar capital." },
+    { id: "fund-short-bond", percentatge: 37, criteri: "Defensa de curta durada", justificacio: "Fons de durada curta amb enfocament defensiu." },
+    { id: "fund-global-bond", percentatge: 30, criteri: "Estabilització global", justificacio: "Nucli principal de renda fixa mitjançant fons d’inversió." },
+    { id: "fund-global-equity", percentatge: 10, criteri: "Renda variable mínima", justificacio: "Exposició global limitada per preservar capital." },
     { id: "div-jpm", percentatge: 5, criteri: "Income prudent", justificacio: "Petit complement de rendes en perfil conservador." },
   ],
   Moderat: [
-    { id: "world-core", percentatge: 33, criteri: "Nucli global", justificacio: "Motor principal de creixement equilibrat." },
-    { id: "aggh", percentatge: 30, criteri: "Estabilització", justificacio: "Redueix la volatilitat total de cartera." },
-    { id: "ibgs", percentatge: 15, criteri: "Durada curta", justificacio: "Amortidor en entorns de tipus d’interès." },
-    { id: "em-vg", percentatge: 8, criteri: "Creixement emergent", justificacio: "Potencial estructural amb pes limitat." },
+    { id: "fund-global-equity", percentatge: 33, criteri: "Nucli global", justificacio: "Fons global diversificat com a motor principal de creixement." },
+    { id: "fund-global-bond", percentatge: 30, criteri: "Estabilització", justificacio: "Redueix la volatilitat total de cartera amb renda fixa global." },
+    { id: "fund-short-bond", percentatge: 15, criteri: "Durada curta", justificacio: "Amortidor en entorns de tipus d’interès." },
+    { id: "fund-emerging", percentatge: 8, criteri: "Creixement emergent", justificacio: "Potencial estructural amb pes limitat." },
     { id: "div-vg", percentatge: 6, criteri: "Income", justificacio: "Component de dividends per estabilitzar retorns." },
     { id: "cash", percentatge: 5, criteri: "Liquiditat tàctica", justificacio: "Marge per reequilibris." },
     { id: "reits", percentatge: 3, criteri: "Diversificació real asset", justificacio: "Petit satèl·lit immobiliari." },
   ],
   Dinàmic: [
-    { id: "world-core", percentatge: 38, criteri: "Core global", justificacio: "Base principal de renda variable global." },
-    { id: "em-vg", percentatge: 14, criteri: "Emergents", justificacio: "Creixement addicional a llarg termini." },
+    { id: "fund-global-equity", percentatge: 38, criteri: "Core global", justificacio: "Base principal de renda variable global amb fons indexat." },
+    { id: "fund-emerging", percentatge: 14, criteri: "Emergents", justificacio: "Creixement addicional a llarg termini." },
     { id: "small-global-vg", percentatge: 12, criteri: "Small caps", justificacio: "Prima de mida i diversificació." },
     { id: "nasdaq-my", percentatge: 10, criteri: "Tecnologia moderada", justificacio: "Exposició tecnològica controlada." },
-    { id: "aggh", percentatge: 10, criteri: "Control de risc", justificacio: "Bloc de renda fixa reduït però estabilitzador." },
+    { id: "fund-global-bond", percentatge: 10, criteri: "Control de risc", justificacio: "Bloc de renda fixa reduït però estabilitzador." },
     { id: "reits", percentatge: 5, criteri: "Alternatiu líquid", justificacio: "Diversificació de fonts de retorn." },
     { id: "div-jpm", percentatge: 5, criteri: "Income quality", justificacio: "Empreses madures amb dividends." },
     { id: "cash", percentatge: 6, criteri: "Gestió tàctica", justificacio: "Reserva per reequilibris i oportunitats." },
   ],
   Agressiu: [
-    { id: "world-core", percentatge: 32, criteri: "Core global", justificacio: "Base principal amb elevada exposició a creixement global." },
-    { id: "em-vg", percentatge: 16, criteri: "Emergents", justificacio: "Potencial elevat amb volatilitat superior." },
+    { id: "fund-global-equity", percentatge: 32, criteri: "Core global", justificacio: "Base principal amb elevada exposició a creixement global." },
+    { id: "fund-emerging", percentatge: 16, criteri: "Emergents", justificacio: "Potencial elevat amb volatilitat superior." },
     { id: "small-global-vg", percentatge: 14, criteri: "Small caps", justificacio: "Més beta i potencial de llarg termini." },
     { id: "nasdaq-my", percentatge: 12, criteri: "Tecnologia", justificacio: "Exposició forta a tecnologia nord-americana." },
-    { id: "ai-polar", percentatge: 10, criteri: "IA temàtica", justificacio: "Satèl·lit d’alt risc per disrupció." },
+    { id: "fund-tech", percentatge: 10, criteri: "IA/tecnologia", justificacio: "Satèl·lit d’alt risc per disrupció." },
     { id: "energy-bgf", percentatge: 8, criteri: "Sectorial energia", justificacio: "Satèl·lit cíclic per diversificar drivers de retorn." },
-    { id: "aggh", percentatge: 5, criteri: "Renda fixa residual", justificacio: "Mínim coixí defensiu." },
+    { id: "fund-global-bond", percentatge: 5, criteri: "Renda fixa residual", justificacio: "Mínim coixí defensiu." },
     { id: "cash", percentatge: 3, criteri: "Liquiditat mínima", justificacio: "Reserva operativa bàsica." },
   ],
 };
@@ -151,6 +158,7 @@ export function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
       tickerOrientatiu: producte.tickerOrientatiu,
       tickerYahoo: producte.tickerYahoo,
       tickerFMP: producte.tickerFMP,
+      gestora: producte.gestora,
       categoria: producte.categoria,
       tipus: producte.tipus,
       gestio: gestioPerTipus(producte),

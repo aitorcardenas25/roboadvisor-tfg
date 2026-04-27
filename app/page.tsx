@@ -387,6 +387,33 @@ export default function Home() {
       return;
     }
 
+    const edat = Number(client.edat);
+    const horitzo = Number(client.horitzoAnys);
+    const ingressos = Number(client.ingressosMensualsNets);
+    const despeses = Number(client.despesesFixesMensuals) + Number(client.despesesVariablesMensuals);
+    const objectiu = Number(client.importObjectiu || 0);
+    const pctInvertir = Number(client.percentatgeEstalviInvertir || 0);
+    if (!Number.isFinite(edat) || edat < 18 || edat > 100) {
+      setError("Edat incoherent. Introdueix una edat entre 18 i 100 anys.");
+      return;
+    }
+    if (!Number.isFinite(horitzo) || horitzo <= 0) {
+      setError("L’horitzó temporal ha de ser superior a 0 anys.");
+      return;
+    }
+    if (!Number.isFinite(ingressos) || ingressos <= 0 || despeses < 0 || despeses > ingressos * 1.5) {
+      setError("Ingressos/despeses incoherents. Revisa els imports mensuals.");
+      return;
+    }
+    if (client.importObjectiu && (!Number.isFinite(objectiu) || objectiu <= 0)) {
+      setError("L’import objectiu ha de ser superior a 0 €.");
+      return;
+    }
+    if (pctInvertir > 100) {
+      setError("El percentatge d’estalvi a invertir no pot superar el 100%.");
+      return;
+    }
+
     setError("");
     setResultat(calcularClient(client));
   };
@@ -767,6 +794,10 @@ function Informe({
       }
     : { font: "Dades pendents de connexió", actualitzacio: "-", nota: "Encara no hi ha prou dades reals per generar mètriques robustes." };
   const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id));
+  const benchmarkProducts = backtestData?.benchmark.composicio ?? [];
+  const informatiusPendents = productes.filter((p) => !p.dataAvailable || p.dataStatus !== "validated");
+  const descartats = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && p.dataStatus === "no_data");
+  const coveragePct = productes.length ? ((productes.filter((p) => p.dataStatus === "validated").length / productes.length) * 100).toFixed(1) : "0.0";
 
   return (
     <div style={{ display: "grid", gap: 24 }}>
@@ -791,11 +822,13 @@ function Informe({
       <Panel title="Cartera recomanada (productes reals)">
         <div>
           <h3 style={sectionTitle}>Productes de cartera (4-8)</h3>
+          <p style={{ ...paragraph, marginTop: 0 }}>La cartera principal prioritza fons d’inversió; els ETFs es mantenen com a referència de benchmark o com a alternativa líquida quan escau.</p>
           <SimpleTable
-            headers={["Classe d’actiu", "Producte", "ISIN", "Ticker", "Tipus", "Gestió", "Pes", "TER", "Cost ponderat", "Estat dades", "Rol", "Benchmark referència", "Funció"]}
+            headers={["Classe d’actiu", "Producte", "Gestora", "ISIN", "Ticker", "Tipus", "Gestió", "Pes", "TER", "Cost ponderat", "Estat dades", "Rol", "Benchmark referència", "Funció"]}
             rows={costos.files.map((p) => [
               p.blocActiu,
               p.nom,
+              p.gestora || "-",
               p.isin,
               p.tickerYahoo || p.tickerFMP || "pendent",
               p.tipus,
@@ -843,6 +876,18 @@ function Informe({
           <br />
           El cost total de la cartera és important perquè redueix la rendibilitat neta esperada a llarg termini.
         </div>
+      </Panel>
+
+      <Panel title="Governança d’univers de productes">
+        <SimpleTable
+          headers={["Bloc", "Detall"]}
+          rows={[
+            ["Productes recomanats per cartera", productes.map((p) => p.nom).join(", ") || "-"],
+            ["Productes utilitzats al benchmark", benchmarkProducts.map((b) => `${b.component} (${b.ticker})`).join(", ") || "pendent"],
+            ["Productes informatius pendents de validació", informatiusPendents.map((p) => p.nom).join(", ") || "Cap"],
+            ["Productes descartats per manca de dades", descartats.map((p) => p.nom).join(", ") || "Cap"],
+          ]}
+        />
       </Panel>
 
       <Panel title="Benchmark compost">
@@ -913,6 +958,10 @@ function Informe({
               <br />
               <strong>Productes pendents de validació:</strong> {backtestData.availability.pendents.join(", ") || "Cap"}.
               <br />
+              <strong>Cobertura de dades (cartera):</strong> {coveragePct}%.
+              <br />
+              <strong>Estat claus API:</strong> {backtestData.missingApiKeys.length > 0 ? `Pendents (${backtestData.missingApiKeys.join(", ")})` : "Configurades o no requerides"}.
+              <br />
               {backtestData.missingApiKeys.length > 0 && (
                 <>
                   <strong>Claus API pendents:</strong> {backtestData.missingApiKeys.join(", ")}. Sense aquestes claus, la cobertura de dades pot ser parcial.
@@ -963,6 +1012,11 @@ function PdfReportDocument({ result, backtestData, metricsData }: { result: Clie
     : { data: [], metrics: { rendibilitatAnualitzada: 0, volatilitat: 0, maxDrawdown: 0, sharpe: 0 }, benchmarkMetrics: { rendibilitatAnualitzada: 0, volatilitat: 0, maxDrawdown: 0, sharpe: 0 } };
   const compClasse = benchmark.composicio.length ? comparacioClasseActiu(result.cartera, benchmark) : [];
   const taulaComparacio = hasRealData ? metriquesComparatives(backtest, benchmark) : [["Estat", "Dades pendents de connexió", "-"]];
+  const blocData = productesPerBloc(productes);
+  const drawdowns = backtestData?.data.map((d, idx) => ({ any: idx === 0 ? "Inici" : d.date, carteraDD: d.carteraDD, benchmarkDD: d.benchmarkDD })) ?? [];
+  const riskReturn = backtestData?.riskReturn ?? [];
+  const riskContribution = backtestData?.riskContribution ?? [];
+  const correlations = backtestData?.correlations ?? [];
   const mc = metricsData?.monteCarlo
     ? {
         trajectoria: metricsData.monteCarlo!.trajectoria,
@@ -1002,8 +1056,8 @@ function PdfReportDocument({ result, backtestData, metricsData }: { result: Clie
       <section style={{ marginBottom: 16 }}>
         <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Cartera recomanada (productes finals)</h2>
         <SimpleTable
-          headers={["Classe d’actiu", "Producte", "ISIN", "Tipus", "Gestió", "Pes", "Rol", "Benchmark", "Funció"]}
-          rows={productes.map((p) => [p.blocActiu, p.nom, p.isin || "pendent de validació", p.tipus, p.gestio, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.dataAvailable ? p.justificacio : "Només informatiu: pendent de validació de dades"])}
+          headers={["Classe d’actiu", "Producte", "Gestora", "ISIN", "Tipus", "Gestió", "Pes", "Rol", "Benchmark", "Funció"]}
+          rows={productes.map((p) => [p.blocActiu, p.nom, p.gestora || "-", p.isin || "pendent de validació", p.tipus, p.gestio, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.dataAvailable ? p.justificacio : "Només informatiu: pendent de validació de dades"])}
         />
       </section>
 
@@ -1020,6 +1074,65 @@ function PdfReportDocument({ result, backtestData, metricsData }: { result: Clie
         <SimpleTable headers={["Classe d’actiu", "Cartera", "Benchmark"]} rows={compClasse.map((r) => [r.classe, `${r.cartera}%`, `${r.benchmark.toFixed(1)}%`])} />
         <div style={{ height: 8 }} />
         <SimpleTable headers={["Mètrica", "Cartera", "Benchmark compost"]} rows={taulaComparacio} />
+      </section>
+
+      <section style={{ marginBottom: 16 }}>
+        <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Visualitzacions clau de cartera</h2>
+        <p style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.6 }}>Els gràfics següents mostren composició, evolució i risc de la cartera. S’interpreten com a eines de decisió, no com a predicció de resultats.</p>
+        <div style={{ height: 240 }}>
+          <ResponsiveContainer>
+            <PieChart>
+              <Pie data={blocData} dataKey="pes" nameKey="bloc" innerRadius={40} outerRadius={85} label />
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <p style={{ margin: "6px 0 10px", fontSize: 12 }}>Interpretació: aquest gràfic mostra el pes estructural per blocs d’actiu i el nivell de risc agregat implícit del perfil.</p>
+        {!!hasRealData && (
+          <>
+            <div style={{ height: 240 }}>
+              <ResponsiveContainer>
+                <LineChart data={backtest.data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="any" />
+                  <YAxis />
+                  <Tooltip formatter={(v) => formatEuro(Number(v))} />
+                  <Line dataKey="cartera" stroke="#0c2d2a" dot={false} />
+                  <Line dataKey="benchmark" stroke="#b39b72" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <p style={{ margin: "6px 0 10px", fontSize: 12 }}>Interpretació: evolució històrica real de 10.000 € comparant cartera i benchmark compost.</p>
+            <div style={{ height: 220 }}>
+              <ResponsiveContainer>
+                <AreaChart data={drawdowns}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="any" />
+                  <YAxis />
+                  <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
+                  <Area dataKey="carteraDD" stroke="#0c2d2a" fill="#d6e7e1" />
+                  <Area dataKey="benchmarkDD" stroke="#b39b72" fill="#f2e9da" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <p style={{ margin: "6px 0 10px", fontSize: 12 }}>Interpretació: drawdown mesura la caiguda des de màxim i ajuda a validar la tolerància real al risc.</p>
+            <div style={{ height: 220 }}>
+              <ResponsiveContainer>
+                <ScatterChart>
+                  <CartesianGrid />
+                  <XAxis dataKey="risc" />
+                  <YAxis dataKey="rendiment" />
+                  <ZAxis dataKey="pes" range={[50, 300]} />
+                  <Tooltip />
+                  <Scatter data={riskReturn} fill="#0c2d2a" />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+            <p style={{ margin: "6px 0 10px", fontSize: 12 }}>Interpretació: relació risc-rendibilitat dels actius validats i pes relatiu a cartera.</p>
+            {!!riskContribution.length && <SimpleTable headers={["Actiu", "Contribució al risc"]} rows={riskContribution.map((r) => [r.nom, `${r.contribucio.toFixed(1)}%`])} />}
+            {!!correlations.length && <SimpleTable headers={["Actiu A", "Actiu B", "Correlació"]} rows={correlations.slice(0, 12).map((c) => [c.x, c.y, c.value.toFixed(2)])} />}
+          </>
+        )}
       </section>
 
       <section style={{ marginBottom: 16 }}>
@@ -1042,6 +1155,21 @@ function PdfReportDocument({ result, backtestData, metricsData }: { result: Clie
       <section style={{ marginBottom: 16 }}>
         <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Alternatives complementàries (resum)</h2>
         <SimpleTable headers={["Producte", "Categoria", "Tipus", "Risc", "Rol"]} rows={alternatives.map((a) => [a.nom, a.categoria, a.tipus, a.risc, a.rol])} />
+      </section>
+
+      <section style={{ marginBottom: 16 }}>
+        <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Fiabilitat, fonts de dades i data d’actualització</h2>
+        <SimpleTable
+          headers={["Camp", "Valor"]}
+          rows={[
+            ["Font de dades", backtestData?.dataSource || "Dades pendents de connexió"],
+            ["Última actualització", backtestData?.updatedAt ? new Date(backtestData.updatedAt).toLocaleString("ca-ES") : "-"],
+            ["Estat de dades", backtestData?.dataStatus || "pending"],
+            ["Cobertura de dades", `${productes.length ? ((productes.filter((p) => p.dataStatus === "validated").length / productes.length) * 100).toFixed(1) : "0.0"}%`],
+            ["Productes validats", backtestData?.availability.ambDades.join(", ") || "Cap"],
+            ["Productes pendents", backtestData?.availability.pendents.join(", ") || "Cap"],
+          ]}
+        />
       </section>
 
       <section style={{ borderTop: "1px solid #d7e0de", paddingTop: 12 }}>
