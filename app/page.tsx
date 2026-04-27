@@ -37,6 +37,7 @@ type ProducteCartera = {
   tickerOrientatiu: string;
   categoria: string;
   tipus: string;
+  gestio: "Activa" | "Indexada" | "Passiva";
   risc: string;
   perfilRecomanat: string;
   rol: string;
@@ -119,6 +120,7 @@ type UniverseProduct = {
   tickerOrientatiu: string;
   categoria: string;
   tipus: string;
+  gestio?: "Activa" | "Indexada" | "Passiva";
   risc: "Baix" | "Mitjà" | "Alt" | "Molt alt";
   perfils: Perfil[];
   rol: "Core" | "Satellite" | "Thematic/high risk" | "Income/dividend" | "Defensive/liquidity";
@@ -126,9 +128,9 @@ type UniverseProduct = {
 };
 
 const PRODUCT_UNIVERSE: UniverseProduct[] = [
-  { id: "world-core", nom: "Trade MSCI ACWI USD Acc", isin: "N/D", tickerOrientatiu: "Trade ACWI", categoria: "Global Equity", tipus: "ETF", risc: "Mitjà", perfils: ["Conservador", "Moderat", "Dinàmic", "Agressiu"], rol: "Core", blocActiu: "Renda variable" },
-  { id: "aggh", nom: "ETF renda fixa global coberta EUR", isin: "IE00BDBRDM35", tickerOrientatiu: "AGGH", categoria: "Global Bonds", tipus: "ETF", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Renda fixa" },
-  { id: "ibgs", nom: "ETF renda fixa governamental EUR curt termini", isin: "IE00B3VTMJ91", tickerOrientatiu: "IBGS", categoria: "Government Bonds", tipus: "ETF", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa" },
+  { id: "world-core", nom: "Fons indexat global ACWI", isin: "pendent de validació", tickerOrientatiu: "Global ACWI Fund", categoria: "Global Equity", tipus: "Fons indexat", gestio: "Indexada", risc: "Mitjà", perfils: ["Conservador", "Moderat", "Dinàmic", "Agressiu"], rol: "Core", blocActiu: "Renda variable" },
+  { id: "aggh", nom: "Fons indexat renda fixa global coberta EUR", isin: "IE00BDBRDM35", tickerOrientatiu: "AGGH-like fund", categoria: "Global Bonds", tipus: "Fons indexat", gestio: "Indexada", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Renda fixa" },
+  { id: "ibgs", nom: "Fons indexat bons governamentals EUR curt termini", isin: "IE00B3VTMJ91", tickerOrientatiu: "Euro Gov 1-3Y fund", categoria: "Government Bonds", tipus: "Fons indexat", gestio: "Indexada", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa" },
   { id: "cash", nom: "Fons monetari EUR", isin: "N/D", tickerOrientatiu: "Monetari EUR", categoria: "Liquidity", tipus: "Fons monetari", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Liquiditat" },
   { id: "reits", nom: "ETF REIT global", isin: "N/D", tickerOrientatiu: "IWDP", categoria: "Real Estate", tipus: "ETF", risc: "Mitjà", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Alternatius" },
   { id: "small-eu", nom: "Invesco Continental European Small Cap Equity A EUR Acc", isin: "LU2305834041", tickerOrientatiu: "Invesco Small Cap EU", categoria: "Europa Small Caps", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
@@ -207,6 +209,13 @@ function benchmarkPerCategoria(categoria: string) {
   return "Benchmark sectorial equivalent";
 }
 
+function gestioPerTipus(producte: UniverseProduct): "Activa" | "Indexada" | "Passiva" {
+  if (producte.gestio) return producte.gestio;
+  if (producte.tipus.toLowerCase().includes("index")) return "Indexada";
+  if (producte.tipus.toLowerCase().includes("etf")) return "Passiva";
+  return "Activa";
+}
+
 function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
   const picks = PROFILE_SELECTION[perfil];
   return picks
@@ -221,6 +230,7 @@ function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
         tickerOrientatiu: producte.tickerOrientatiu,
         categoria: producte.categoria,
         tipus: producte.tipus,
+        gestio: gestioPerTipus(producte),
         risc: producte.risc,
         perfilRecomanat: producte.perfils.join(", "),
         rol: producte.rol,
@@ -428,6 +438,7 @@ export default function Home() {
   const [client, setClient] = useState<Client>(initialClient);
   const [resultat, setResultat] = useState<ClientResult | null>(null);
   const [error, setError] = useState("");
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   const update = (key: keyof Client, value: string) => setClient({ ...client, [key]: value });
 
@@ -461,6 +472,41 @@ export default function Home() {
         { name: "Alternatius", value: resultat.cartera.alternatius },
       ]
     : [];
+
+  const handleGeneratePdf = async () => {
+    if (!resultat) return;
+    const pdfRoot = document.getElementById("pdf-report");
+    if (!pdfRoot) return;
+    setGeneratingPdf(true);
+    try {
+      const safeName = (resultat.row.nom || "client").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const win = window.open("", "_blank", "noopener,noreferrer,width=1100,height=900");
+      if (!win) return;
+      const printableHtml = `
+        <html>
+          <head>
+            <title>informe-roboadvisor-${safeName || "client"}.pdf</title>
+            <meta charset="utf-8" />
+            <style>
+              @page { size: A4; margin: 16mm; }
+              body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border-bottom: 1px solid #e0e6e5; padding: 8px 10px; font-size: 12px; text-align: left; vertical-align: top; }
+              th { background: #eef6f4; text-transform: uppercase; font-size: 10px; }
+            </style>
+          </head>
+          <body>${pdfRoot.innerHTML}</body>
+        </html>
+      `;
+      win.document.open();
+      win.document.write(printableHtml);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 400);
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
 
   return (
     <main className="px-3 py-4 sm:px-5 sm:py-6 md:px-7 md:py-8" style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.textDark }}>
@@ -675,17 +721,33 @@ export default function Home() {
 
             <section className="mt-5">
               <Panel title="4. Informe financer personalitzat">
-                <Informe result={resultat} />
+                <Informe result={resultat} onGeneratePdf={handleGeneratePdf} generatingPdf={generatingPdf} />
               </Panel>
             </section>
           </>
         )}
       </div>
+
+      {resultat && (
+        <div style={{ position: "fixed", left: -10000, top: 0, width: 1100, background: "#fff", padding: 24, zIndex: -1 }} aria-hidden="true">
+          <div id="pdf-report">
+            <PdfReportDocument result={resultat} />
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
-function Informe({ result }: { result: ClientResult }) {
+function Informe({
+  result,
+  onGeneratePdf,
+  generatingPdf,
+}: {
+  result: ClientResult;
+  onGeneratePdf: () => void;
+  generatingPdf: boolean;
+}) {
   const productes = productesPerPerfil(result.perfilFinal);
   const backtest = generarBacktestSimulat(result.perfilFinal);
   const benchmark = benchmarkCompost(result.perfilFinal);
@@ -706,7 +768,9 @@ function Informe({ result }: { result: ClientResult }) {
             Proposta per a {result.row.nom || "client"} basada en perfilació avançada, capacitat real de risc, tolerància psicològica i criteris de construcció de cartera.
           </p>
         </div>
-        <button onClick={() => window.print()} style={buttonStyle}>Imprimir / PDF</button>
+        <button onClick={onGeneratePdf} style={buttonStyle} disabled={generatingPdf}>
+          {generatingPdf ? "Generant PDF..." : "Generar informe PDF"}
+        </button>
       </div>
 
       <ExecutiveSummary result={result} />
@@ -719,8 +783,8 @@ function Informe({ result }: { result: ClientResult }) {
         <div>
           <h3 style={sectionTitle}>Productes de cartera (4-8)</h3>
           <SimpleTable
-            headers={["Producte", "ISIN", "Categoria", "Pes", "Rol", "Benchmark referència", "Funció"]}
-            rows={productes.map((p) => [p.nom, p.isin, `${p.categoria} · ${p.tipus}`, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.justificacio])}
+            headers={["Classe d’actiu", "Producte", "ISIN", "Tipus", "Gestió", "Pes", "Rol", "Benchmark referència", "Funció"]}
+            rows={productes.map((p) => [p.blocActiu, p.nom, p.isin, p.tipus, p.gestio, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.justificacio])}
           />
         </div>
       </Panel>
@@ -769,22 +833,6 @@ function Informe({ result }: { result: ClientResult }) {
         <MonteCarloBlock mc={monteCarlo} />
       </Panel>
 
-      <Panel title="Visualització professional de la cartera">
-        <ProfessionalCharts
-          blocData={blocData}
-          productes={productes}
-          backtest={backtest}
-          riscReturn={riscReturn}
-          drawdowns={drawdowns}
-          benchmark={benchmark}
-        />
-      </Panel>
-
-      <div>
-        <h3 style={sectionTitle}>Univers complementari</h3>
-        <ProductGroups alternatives={alternatives} />
-      </div>
-
       <MonteCarloBlock mc={monteCarlo} />
 
       <ProfessionalBox
@@ -802,6 +850,88 @@ function Informe({ result }: { result: ClientResult }) {
       </Panel>
       <DefenseBox />
       <LegalNotice />
+    </div>
+  );
+}
+
+function PdfReportDocument({ result }: { result: ClientResult }) {
+  const productes = productesPerPerfil(result.perfilFinal);
+  const benchmark = benchmarkCompost(result.perfilFinal);
+  const backtest = generarBacktestSimulat(result.perfilFinal);
+  const compClasse = comparacioClasseActiu(result.cartera, benchmark);
+  const taulaComparacio = metriquesComparatives(backtest, benchmark);
+  const mc = simulacioMonteCarlo(result);
+  const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id)).slice(0, 5);
+
+  return (
+    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", color: "#1a1a1a", background: "white" }}>
+      <section style={{ borderBottom: "3px solid #0c2d2a", paddingBottom: 10, marginBottom: 16 }}>
+        <div style={{ color: "#0c2d2a", fontWeight: 800, letterSpacing: 1.4 }}>ROBOADVISOR · INFORME INDEPENDENT</div>
+        <h1 style={{ margin: "8px 0 4px", fontSize: 26, color: "#0c2d2a" }}>Informe financer personalitzat</h1>
+        <div style={{ color: "#666", fontSize: 13 }}>Client: {result.row.nom || "Client"} · Perfil: {result.perfilFinal} · Score: {result.scoreFinal}/100</div>
+      </section>
+
+      <section style={{ marginBottom: 16 }}>
+        <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Resum executiu</h2>
+        <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7, fontSize: 13 }}>
+          <li>Objectiu principal: {result.row.objectiuPrincipal || "pendent"}.</li>
+          <li>Horitzó temporal: {result.row.horitzoAnys || "-"} anys.</li>
+          <li>Asset allocation: RV {result.cartera.rendaVariable}% · RF {result.cartera.rendaFixa}% · Liquidesa {result.cartera.liquiditat}% · Alternatius {result.cartera.alternatius}%.</li>
+        </ul>
+      </section>
+
+      <section style={{ marginBottom: 16 }}>
+        <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Cartera recomanada (productes finals)</h2>
+        <SimpleTable
+          headers={["Classe d’actiu", "Producte", "ISIN", "Tipus", "Gestió", "Pes", "Rol", "Benchmark", "Funció"]}
+          rows={productes.map((p) => [p.blocActiu, p.nom, p.isin || "pendent de validació", p.tipus, p.gestio, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.justificacio])}
+        />
+      </section>
+
+      <section style={{ marginBottom: 16 }}>
+        <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Benchmark compost</h2>
+        <p style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.6 }}>
+          El benchmark compost és la referència utilitzada per comparar la cartera. No és un únic índex, sinó una combinació ponderada coherent amb el perfil inversor.
+        </p>
+        <SimpleTable headers={["Índex", "Pes", "Retorn esperat", "Volatilitat"]} rows={benchmark.composicio.map((c) => [c.component, `${c.pes}%`, formatPct(c.r), formatPct(c.v)])} />
+      </section>
+
+      <section style={{ marginBottom: 16 }}>
+        <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Comparació cartera vs benchmark</h2>
+        <SimpleTable headers={["Classe d’actiu", "Cartera", "Benchmark"]} rows={compClasse.map((r) => [r.classe, `${r.cartera}%`, `${r.benchmark.toFixed(1)}%`])} />
+        <div style={{ height: 8 }} />
+        <SimpleTable headers={["Mètrica", "Cartera", "Benchmark compost"]} rows={taulaComparacio} />
+      </section>
+
+      <section style={{ marginBottom: 16 }}>
+        <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Simulació Monte Carlo</h2>
+        <SimpleTable
+          headers={["Mètrica", "Valor"]}
+          rows={[
+            ["Escenari pessimista", formatEuro(mc.rang.min)],
+            ["Escenari esperat", formatEuro(mc.valorFinalEsperat)],
+            ["Escenari optimista", formatEuro(mc.rang.max)],
+            ["Probabilitat estimada d’assolir objectiu", `${mc.probAssolir}%`],
+          ]}
+        />
+      </section>
+
+      <section style={{ marginBottom: 16 }}>
+        <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Alternatives complementàries (resum)</h2>
+        <SimpleTable headers={["Producte", "Categoria", "Tipus", "Risc", "Rol"]} rows={alternatives.map((a) => [a.nom, a.categoria, a.tipus, a.risc, a.rol])} />
+      </section>
+
+      <section style={{ borderTop: "1px solid #d7e0de", paddingTop: 12 }}>
+        <h2 style={{ color: "#0c2d2a", margin: "0 0 6px", fontSize: 18 }}>Conclusió</h2>
+        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7 }}>
+          La cartera s’ajusta al perfil {result.perfilFinal.toLowerCase()} i prioritza coherència entre risc, horitzó i objectiu.
+          Les simulacions són orientatives i no garanteixen resultats futurs.
+        </p>
+      </section>
+
+      <div style={{ marginTop: 12, fontSize: 11.5, color: "#555", background: "#fff8e8", border: "1px solid #e7dcc0", padding: 10 }}>
+        Aquesta proposta té finalitat acadèmica i educativa. No constitueix assessorament financer personalitzat regulat ni recomanació d’inversió real.
+      </div>
     </div>
   );
 }
