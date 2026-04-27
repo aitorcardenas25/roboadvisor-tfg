@@ -15,6 +15,7 @@ import {
   Area,
   ScatterChart,
   Scatter,
+  ZAxis,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -40,6 +41,7 @@ type ProducteCartera = {
   perfilRecomanat: string;
   rol: string;
   blocActiu: string;
+  benchmarkRef: string;
   percentatge: number;
   criteri: string;
   justificacio: string;
@@ -189,6 +191,22 @@ const PROFILE_SELECTION: Record<Perfil, Array<{ id: string; percentatge: number;
   ],
 };
 
+function benchmarkPerCategoria(categoria: string) {
+  if (categoria.includes("Global Equity")) return "MSCI ACWI Index";
+  if (categoria.includes("Global Bonds")) return "Bloomberg Global Aggregate Bond EUR Hedged";
+  if (categoria.includes("Government Bonds")) return "ICE BofA Euro Government 1-3Y";
+  if (categoria.includes("Liquidity")) return "€STR";
+  if (categoria.includes("Real Estate")) return "FTSE EPRA/NAREIT Global REIT";
+  if (categoria.includes("Small Caps")) return "MSCI World Small Cap";
+  if (categoria.includes("emergents") || categoria.includes("Mercats emergents")) return "MSCI Emerging Markets";
+  if (categoria.includes("NASDAQ")) return "NASDAQ-100";
+  if (categoria.includes("Tecnologia")) return "MSCI World Information Technology";
+  if (categoria.includes("Energia")) return "MSCI World Energy";
+  if (categoria.includes("Dividends")) return "MSCI World High Dividend Yield";
+  if (categoria.includes("Xina")) return "MSCI China";
+  return "Benchmark sectorial equivalent";
+}
+
 function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
   const picks = PROFILE_SELECTION[perfil];
   return picks
@@ -207,6 +225,7 @@ function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
         perfilRecomanat: producte.perfils.join(", "),
         rol: producte.rol,
         blocActiu: producte.blocActiu,
+        benchmarkRef: benchmarkPerCategoria(producte.categoria),
         percentatge: pick.percentatge,
         criteri: pick.criteri,
         justificacio: pick.justificacio,
@@ -300,6 +319,38 @@ function benchmarkCompost(perfil: Perfil) {
   return { composicio: base, rendibilitat, volatilitat };
 }
 
+function classeActiuBenchmark(component: string): "Renda variable" | "Renda fixa" | "Liquiditat" | "Alternatius" {
+  const text = component.toLowerCase();
+  if (text.includes("bond") || text.includes("govt")) return "Renda fixa";
+  if (text.includes("cash")) return "Liquiditat";
+  if (text.includes("reit")) return "Alternatius";
+  return "Renda variable";
+}
+
+function comparacioClasseActiu(cartera: CarteraModel, benchmark: ReturnType<typeof benchmarkCompost>) {
+  const benchmarkAgg = { "Renda variable": 0, "Renda fixa": 0, Liquiditat: 0, Alternatius: 0 };
+  for (const b of benchmark.composicio) {
+    const classe = classeActiuBenchmark(b.component);
+    benchmarkAgg[classe] += b.pes;
+  }
+  return [
+    { classe: "Renda variable", cartera: cartera.rendaVariable, benchmark: benchmarkAgg["Renda variable"] },
+    { classe: "Renda fixa", cartera: cartera.rendaFixa, benchmark: benchmarkAgg["Renda fixa"] },
+    { classe: "Liquiditat", cartera: cartera.liquiditat, benchmark: benchmarkAgg.Liquiditat },
+    { classe: "Alternatius", cartera: cartera.alternatius, benchmark: benchmarkAgg.Alternatius },
+  ];
+}
+
+function metriquesComparatives(backtest: ReturnType<typeof generarBacktestSimulat>, benchmark: ReturnType<typeof benchmarkCompost>) {
+  const sharpeBenchmark = benchmark.volatilitat > 0 ? benchmark.rendibilitat / benchmark.volatilitat : 0;
+  return [
+    ["Rendibilitat esperada", formatPct(backtest.metrics.rendibilitatAnualitzada), formatPct(benchmark.rendibilitat)],
+    ["Volatilitat", formatPct(backtest.metrics.volatilitat), formatPct(benchmark.volatilitat)],
+    ["Sharpe aprox.", backtest.metrics.sharpe.toFixed(2), sharpeBenchmark.toFixed(2)],
+    ["Drawdown estimat", formatPct(backtest.metrics.maxDrawdown), formatPct(backtest.benchmarkMetrics.maxDrawdown)],
+  ];
+}
+
 function productesPerBloc(productes: ProducteCartera[]) {
   const blocMap = new Map<string, number>();
   for (const p of productes) blocMap.set(p.blocActiu, (blocMap.get(p.blocActiu) || 0) + p.percentatge);
@@ -312,6 +363,8 @@ function riscVsRendibilitat(productes: ProducteCartera[]) {
     nom: p.tickerOrientatiu,
     risc: riskScore[p.risc] || 12,
     rendiment: p.risc === "Baix" ? 2.5 : p.risc === "Mitjà" ? 5.2 : p.risc === "Alt" ? 8.1 : 10.5,
+    pes: p.percentatge,
+    serie: "Cartera",
   }));
 }
 
@@ -640,6 +693,8 @@ function Informe({ result }: { result: ClientResult }) {
   const riscReturn = riscVsRendibilitat(productes);
   const drawdowns = drawdownSeries(backtest);
   const monteCarlo = simulacioMonteCarlo(result);
+  const compClasse = comparacioClasseActiu(result.cartera, benchmark);
+  const taulaComparacio = metriquesComparatives(backtest, benchmark);
   const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id));
 
   return (
@@ -655,8 +710,24 @@ function Informe({ result }: { result: ClientResult }) {
       </div>
 
       <ExecutiveSummary result={result} />
-      <MethodologyBox />
-      <BenchmarkCompostBox benchmark={benchmark} />
+
+      <Panel title="Perfil i diagnòstic">
+        <MethodologyBox />
+      </Panel>
+
+      <Panel title="Cartera recomanada (productes reals)">
+        <div>
+          <h3 style={sectionTitle}>Productes de cartera (4-8)</h3>
+          <SimpleTable
+            headers={["Producte", "ISIN", "Categoria", "Pes", "Rol", "Benchmark referència", "Funció"]}
+            rows={productes.map((p) => [p.nom, p.isin, `${p.categoria} · ${p.tipus}`, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.justificacio])}
+          />
+        </div>
+      </Panel>
+
+      <Panel title="Benchmark compost">
+        <BenchmarkCompostBox benchmark={benchmark} />
+      </Panel>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
         <MiniMetric title="Renda variable" value={`${result.cartera.rendaVariable}%`} />
@@ -672,24 +743,31 @@ function Informe({ result }: { result: ClientResult }) {
 
       <CriteriaGrid />
 
-      <div>
-        <h3 style={sectionTitle}>Univers d’inversió seleccionat</h3>
-        <SimpleTable
-          headers={["Instrument", "ISIN", "Categoria", "Tipus", "Risc", "Perfil recomanat", "Rol", "Pes", "Criteri", "Justificació"]}
-          rows={productes.map((p) => [
-            p.nom,
-            p.isin,
-            p.categoria,
-            `${p.tipus} (${p.tickerOrientatiu})`,
-            <RiskBadge key={`${p.id}-r`} risc={p.risc} />,
-            p.perfilRecomanat,
-            p.rol,
-            `${p.percentatge}%`,
-            p.criteri,
-            p.justificacio,
-          ])}
+      <Panel title="Comparació cartera vs benchmark">
+        <ComparacioCarteraBenchmark compClasse={compClasse} taulaComparacio={taulaComparacio} />
+      </Panel>
+
+      <Panel title="Visualització professional de la cartera">
+        <ProfessionalCharts
+          blocData={blocData}
+          productes={productes}
+          backtest={backtest}
+          riscReturn={riscReturn}
+          drawdowns={drawdowns}
+          benchmark={benchmark}
         />
-      </div>
+      </Panel>
+
+      <Panel title="Univers complementari">
+        <h3 style={sectionTitle}>Univers complementari</h3>
+        <ProductGroups alternatives={alternatives} />
+      </Panel>
+
+      <Panel title="Simulacions (backtest + Monte Carlo)">
+        <BacktestBlock backtest={backtest} />
+        <div style={{ height: 12 }} />
+        <MonteCarloBlock mc={monteCarlo} />
+      </Panel>
 
       <Panel title="Visualització professional de la cartera">
         <ProfessionalCharts
@@ -718,10 +796,10 @@ function Informe({ result }: { result: ClientResult }) {
         }
       />
 
-      <BacktestBlock backtest={backtest} />
-
       <ProfessionalBox title="Explicació final per al client" text={`Es recomana una cartera ${result.perfilFinal.toLowerCase()} perquè el model detecta ${result.motius.join(", ")}.`} />
-      <FinalConclusion result={result} />
+      <Panel title="Conclusions finals">
+        <FinalConclusion result={result} />
+      </Panel>
       <DefenseBox />
       <LegalNotice />
     </div>
@@ -862,9 +940,51 @@ function BenchmarkCompostBox({ benchmark }: { benchmark: ReturnType<typeof bench
         headers={["Component de benchmark", "Pes", "Rendibilitat esperada", "Volatilitat estimada"]}
         rows={benchmark.composicio.map((c) => [c.component, `${c.pes}%`, formatPct(c.r), formatPct(c.v)])}
       />
+      <div style={{ height: "clamp(220px, 46vw, 280px)", marginTop: 10 }}>
+        <ResponsiveContainer>
+          <BarChart data={benchmark.composicio}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="component" hide />
+            <YAxis />
+            <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
+            <Legend />
+            <Bar dataKey="pes" name="Pes benchmark" fill={COLORS.gold} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
       <div style={{ marginTop: 10, color: COLORS.textMedium, fontSize: 13 }}>
         <strong>Resultat compost:</strong> Rendibilitat esperada {formatPct(benchmark.rendibilitat)} · Volatilitat estimada {formatPct(benchmark.volatilitat)}.
       </div>
+    </div>
+  );
+}
+
+function ComparacioCarteraBenchmark({
+  compClasse,
+  taulaComparacio,
+}: {
+  compClasse: Array<{ classe: string; cartera: number; benchmark: number }>;
+  taulaComparacio: string[][];
+}) {
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <p style={paragraph}>
+        La comparació es fa contra un benchmark compost coherent amb el perfil, no contra un únic índex. Això permet avaluar millor si el risc i la rendibilitat esperada de la cartera són consistents.
+      </p>
+      <div style={{ height: "clamp(220px, 48vw, 290px)" }}>
+        <ResponsiveContainer>
+          <BarChart data={compClasse}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="classe" />
+            <YAxis />
+            <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
+            <Legend />
+            <Bar dataKey="cartera" fill={COLORS.primaryDark} name="Cartera" />
+            <Bar dataKey="benchmark" fill={COLORS.gold} name="Benchmark" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <SimpleTable headers={["Mètrica", "Cartera", "Benchmark compost"]} rows={taulaComparacio} />
     </div>
   );
 }
@@ -880,7 +1000,7 @@ function ProfessionalCharts({
   blocData: Array<{ bloc: string; pes: number }>;
   productes: ProducteCartera[];
   backtest: ReturnType<typeof generarBacktestSimulat>;
-  riscReturn: Array<{ nom: string; risc: number; rendiment: number }>;
+  riscReturn: Array<{ nom: string; risc: number; rendiment: number; pes: number; serie: string }>;
   drawdowns: Array<{ any: string; carteraDD: number; benchmarkDD: number }>;
   benchmark: ReturnType<typeof benchmarkCompost>;
 }) {
@@ -888,6 +1008,7 @@ function ProfessionalCharts({
     { serie: "Cartera", rendibilitat: backtest.metrics.rendibilitatAnualitzada, volatilitat: backtest.metrics.volatilitat, drawdown: backtest.metrics.maxDrawdown },
     { serie: "Benchmark compost", rendibilitat: benchmark.rendibilitat, volatilitat: benchmark.volatilitat, drawdown: backtest.benchmarkMetrics.maxDrawdown },
   ];
+  const benchmarkPoint = [{ nom: "Benchmark compost", risc: benchmark.volatilitat, rendiment: benchmark.rendibilitat, pes: 30, serie: "Benchmark" }];
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
@@ -947,8 +1068,11 @@ function ProfessionalCharts({
                 <CartesianGrid />
                 <XAxis dataKey="risc" name="Risc" unit="%" />
                 <YAxis dataKey="rendiment" name="Rendiment" unit="%" />
+                <ZAxis dataKey="pes" range={[60, 420]} />
                 <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-                <Scatter name="Productes" data={riscReturn} fill={COLORS.primaryDark} />
+                <Legend />
+                <Scatter name="Actius cartera" data={riscReturn} fill={COLORS.primaryDark} />
+                <Scatter name="Benchmark compost" data={benchmarkPoint} fill={COLORS.gold} />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
