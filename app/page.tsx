@@ -9,6 +9,12 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  ScatterChart,
+  Scatter,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -24,9 +30,16 @@ type CarteraModel = {
 };
 
 type ProducteCartera = {
+  id: string;
   nom: string;
+  isin: string;
   tickerOrientatiu: string;
+  categoria: string;
   tipus: string;
+  risc: string;
+  perfilRecomanat: string;
+  rol: string;
+  blocActiu: string;
   percentatge: number;
   criteri: string;
   justificacio: string;
@@ -97,258 +110,109 @@ function carteraPerPerfil(perfil: Perfil): CarteraModel {
   return { rendaVariable: 90, rendaFixa: 5, liquiditat: 0, alternatius: 5 };
 }
 
+type UniverseProduct = {
+  id: string;
+  nom: string;
+  isin: string;
+  tickerOrientatiu: string;
+  categoria: string;
+  tipus: string;
+  risc: "Baix" | "Mitjà" | "Alt" | "Molt alt";
+  perfils: Perfil[];
+  rol: "Core" | "Satellite" | "Thematic/high risk" | "Income/dividend" | "Defensive/liquidity";
+  blocActiu: "Renda variable" | "Renda fixa" | "Liquiditat" | "Alternatius";
+};
+
+const PRODUCT_UNIVERSE: UniverseProduct[] = [
+  { id: "world-core", nom: "Trade MSCI ACWI USD Acc", isin: "N/D", tickerOrientatiu: "Trade ACWI", categoria: "Global Equity", tipus: "ETF", risc: "Mitjà", perfils: ["Conservador", "Moderat", "Dinàmic", "Agressiu"], rol: "Core", blocActiu: "Renda variable" },
+  { id: "aggh", nom: "ETF renda fixa global coberta EUR", isin: "IE00BDBRDM35", tickerOrientatiu: "AGGH", categoria: "Global Bonds", tipus: "ETF", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Renda fixa" },
+  { id: "ibgs", nom: "ETF renda fixa governamental EUR curt termini", isin: "IE00B3VTMJ91", tickerOrientatiu: "IBGS", categoria: "Government Bonds", tipus: "ETF", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa" },
+  { id: "cash", nom: "Fons monetari EUR", isin: "N/D", tickerOrientatiu: "Monetari EUR", categoria: "Liquidity", tipus: "Fons monetari", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Liquiditat" },
+  { id: "reits", nom: "ETF REIT global", isin: "N/D", tickerOrientatiu: "IWDP", categoria: "Real Estate", tipus: "ETF", risc: "Mitjà", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Alternatius" },
+  { id: "small-eu", nom: "Invesco Continental European Small Cap Equity A EUR Acc", isin: "LU2305834041", tickerOrientatiu: "Invesco Small Cap EU", categoria: "Europa Small Caps", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "small-global-vg", nom: "Vanguard Global Small-Cap Index Fund EUR Acc", isin: "IE00B42W4L06", tickerOrientatiu: "Vanguard Small Cap", categoria: "Global Small Caps", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "small-global-ish", nom: "iShares MSCI World Small Cap UCITS ETF USD Acc", isin: "N/D", tickerOrientatiu: "IUSN", categoria: "Global Small Caps", tipus: "ETF", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "em-vg", nom: "Vanguard Emerging Markets Stock Index Fund EUR", isin: "IE0031786696", tickerOrientatiu: "Vanguard EM", categoria: "Mercats emergents", tipus: "Fons indexat", risc: "Alt", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "asia-active", nom: "Federated Hermes Asia ex-Japan Equity Fund Class F Acc", isin: "IE00B8H6X308", tickerOrientatiu: "Hermes Asia ex-Japan", categoria: "Àsia ex-Japó", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "nasdaq-my", nom: "MyInvestor Nasdaq-100", isin: "N/D", tickerOrientatiu: "Nasdaq-100", categoria: "NASDAQ 100", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "qqq", nom: "Invesco QQQ Trust Series 1 ETF", isin: "US46090E1038", tickerOrientatiu: "QQQ", categoria: "NASDAQ 100", tipus: "ETF", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "ai-polar", nom: "Polar Capital Artificial Intelligence Fund I Acc", isin: "IE00BF0GL329", tickerOrientatiu: "Polar AI", categoria: "Tecnologia i IA", tipus: "Fons", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "tech-polar", nom: "Polar Capital Global Technology Fund R", isin: "IE00BM95B621", tickerOrientatiu: "Polar Tech", categoria: "Tecnologia global", tipus: "Fons", risc: "Molt alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "tech-fidelity", nom: "Fidelity Funds Global Technology Fund A-Acc-EUR Hedged", isin: "LU1841614867", tickerOrientatiu: "Fidelity Tech Hedged", categoria: "Tecnologia global", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "biotech", nom: "Polar Capital Biotech R Inc", isin: "IE00B3VXGD32", tickerOrientatiu: "Polar Biotech", categoria: "Innovació sanitària", tipus: "Fons", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "energy-bgf", nom: "BlackRock Global Funds World Energy Fund D2 EUR", isin: "LU0252963896", tickerOrientatiu: "BGF World Energy", categoria: "Energia", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "energy-vg", nom: "Vanguard Energy Fund Investor Shares", isin: "US9219081091", tickerOrientatiu: "VGENX", categoria: "Energia", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "gold-miners", nom: "DWS Invest Gold and Precious Metals Equities LC", isin: "LU0273159177", tickerOrientatiu: "DWS Gold Miners", categoria: "Mineres / Or", tipus: "Fons", risc: "Molt alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Alternatius" },
+  { id: "china-index", nom: "Pictet China Index P EUR", isin: "LU0625737910", tickerOrientatiu: "Pictet China", categoria: "Xina", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "div-jpm", nom: "JPMorgan Investment Funds Global Dividend Fund A div EUR", isin: "LU0714179727", tickerOrientatiu: "JPM Global Dividend", categoria: "Dividends", tipus: "Fons", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable" },
+  { id: "div-vg", nom: "Vanguard Global Equity Income Fund", isin: "N/D", tickerOrientatiu: "Vanguard Equity Income", categoria: "Dividends", tipus: "Fons", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable" },
+  { id: "oil-gas-ish", nom: "iShares Oil & Gas Exploration & Production", isin: "N/D", tickerOrientatiu: "iShares Oil&Gas", categoria: "Energia", tipus: "ETF", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "robotics", nom: "Global X Robotics & Artificial Intelligence ETF", isin: "N/D", tickerOrientatiu: "BOTZ", categoria: "Tecnologia i IA", tipus: "ETF", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+];
+
+const PROFILE_SELECTION: Record<Perfil, Array<{ id: string; percentatge: number; criteri: string; justificacio: string }>> = {
+  Conservador: [
+    { id: "cash", percentatge: 10, criteri: "Reserva de liquiditat", justificacio: "Cobertura d’imprevistos i reducció del risc de venda forçada." },
+    { id: "ibgs", percentatge: 35, criteri: "Defensa de curta durada", justificacio: "Durada moderada i menor sensibilitat a tipus d’interès." },
+    { id: "aggh", percentatge: 30, criteri: "Diversificació de renda fixa", justificacio: "Bloc estabilitzador global amb cobertura a EUR." },
+    { id: "world-core", percentatge: 20, criteri: "Core de creixement prudent", justificacio: "Exposició global diversificada amb pes controlat." },
+    { id: "div-jpm", percentatge: 5, criteri: "Renda periòdica", justificacio: "Complement d’ingressos en perfil defensiu." },
+  ],
+  Moderat: [
+    { id: "world-core", percentatge: 35, criteri: "Nucli global", justificacio: "Motor principal de creixement ajustat al risc moderat." },
+    { id: "aggh", percentatge: 28, criteri: "Estabilització", justificacio: "Reduceix volatilitat total de cartera." },
+    { id: "ibgs", percentatge: 12, criteri: "Durada curta", justificacio: "Amortidor addicional davant cicles de tipus." },
+    { id: "em-vg", percentatge: 8, criteri: "Creixement emergent", justificacio: "Potencial estructural amb pes limitat." },
+    { id: "div-vg", percentatge: 7, criteri: "Income", justificacio: "Component de dividends per estabilitzar retorns." },
+    { id: "cash", percentatge: 5, criteri: "Liquiditat tàctica", justificacio: "Marge per reequilibris." },
+    { id: "reits", percentatge: 5, criteri: "Diversificació real asset", justificacio: "Exposició immobiliària cotitzada." },
+  ],
+  Dinàmic: [
+    { id: "world-core", percentatge: 35, criteri: "Core global", justificacio: "Base d’exposició global de renda variable." },
+    { id: "em-vg", percentatge: 12, criteri: "Emergents", justificacio: "Creixement a llarg termini." },
+    { id: "small-global-vg", percentatge: 8, criteri: "Small caps", justificacio: "Prima de mida i diversificació." },
+    { id: "nasdaq-my", percentatge: 10, criteri: "Tecnologia large cap", justificacio: "Exposició a innovació i creixement." },
+    { id: "aggh", percentatge: 15, criteri: "Control de risc", justificacio: "Bloc de renda fixa per contenir drawdowns." },
+    { id: "reits", percentatge: 5, criteri: "Alternatiu líquid", justificacio: "Diversificació de fonts de retorn." },
+    { id: "div-jpm", percentatge: 5, criteri: "Income quality", justificacio: "Empreses madures amb dividends." },
+    { id: "cash", percentatge: 10, criteri: "Gestió tàctica", justificacio: "Reserva per aportacions i reequilibris." },
+  ],
+  Agressiu: [
+    { id: "world-core", percentatge: 26, criteri: "Core global", justificacio: "Base diversificada per evitar concentració extrema." },
+    { id: "em-vg", percentatge: 15, criteri: "Emergents", justificacio: "Elevat potencial de creixement." },
+    { id: "small-global-ish", percentatge: 10, criteri: "Small caps global", justificacio: "Increment de beta i prima de mida." },
+    { id: "qqq", percentatge: 10, criteri: "Nasdaq 100", justificacio: "Biaix a mega-cap tecnològiques." },
+    { id: "ai-polar", percentatge: 8, criteri: "Temàtica IA", justificacio: "Exposició específica a disrupció tecnològica." },
+    { id: "energy-bgf", percentatge: 8, criteri: "Temàtica energia", justificacio: "Diversificació cíclica i de matèries primeres." },
+    { id: "aggh", percentatge: 13, criteri: "Estabilització mínima", justificacio: "Petit bloc per controlar risc agregat." },
+    { id: "cash", percentatge: 10, criteri: "Liquiditat operativa", justificacio: "Reserves per volatilitat i oportunitats." },
+  ],
+};
+
 function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
-  if (perfil === "Conservador") {
-    return [
-      {
-        nom: "Fons monetari EUR",
-        tickerOrientatiu: "Monetari EUR",
-        tipus: "Liquiditat",
-        percentatge: 10,
-        criteri: "Preservació de capital",
-        justificacio:
-          "Reserva de liquiditat amb volatilitat molt baixa. Permet mantenir disponibilitat immediata i redueix el risc global de la cartera.",
-      },
-      {
-        nom: "ETF renda fixa governamental EUR curt termini",
-        tickerOrientatiu: "IBGS / similar",
-        tipus: "Renda fixa",
-        percentatge: 30,
-        criteri: "Baixa durada",
-        justificacio:
-          "Actua com a bloc defensiu. La durada curta redueix la sensibilitat davant canvis en els tipus d’interès.",
-      },
-      {
-        nom: "ETF renda fixa global coberta a EUR",
-        tickerOrientatiu: "AGGH / similar",
-        tipus: "Renda fixa",
-        percentatge: 35,
-        criteri: "Diversificació global",
-        justificacio:
-          "Aporta exposició a bons globals i redueix el risc de divisa mitjançant cobertura a euros.",
-      },
-      {
-        nom: "ETF MSCI World",
-        tickerOrientatiu: "IWDA / SWDA",
-        tipus: "Renda variable global",
-        percentatge: 15,
-        criteri: "Creixement controlat",
-        justificacio:
-          "Permet participar en el creixement de mercats desenvolupats sense concentrar el risc en accions individuals.",
-      },
-      {
-        nom: "ETF REIT global",
-        tickerOrientatiu: "IWDP / similar",
-        tipus: "Alternatius líquids",
-        percentatge: 5,
-        criteri: "Diversificació immobiliària",
-        justificacio:
-          "Aporta exposició immobiliària cotitzada amb liquiditat diària i baixa ponderació per controlar la volatilitat.",
-      },
-      {
-        nom: "ETF renda variable Europa",
-        tickerOrientatiu: "IMEU / similar",
-        tipus: "Renda variable regional",
-        percentatge: 5,
-        criteri: "Complement regional",
-        justificacio:
-          "Introdueix exposició europea moderada, coherent amb un inversor resident a la zona euro.",
-      },
-    ];
-  }
-
-  if (perfil === "Moderat") {
-    return [
-      {
-        nom: "ETF MSCI World",
-        tickerOrientatiu: "IWDA / SWDA",
-        tipus: "Renda variable global",
-        percentatge: 32,
-        criteri: "Nucli de creixement",
-        justificacio:
-          "És el principal motor de rendibilitat esperada, amb exposició diversificada a empreses de països desenvolupats.",
-      },
-      {
-        nom: "ETF renda fixa global coberta a EUR",
-        tickerOrientatiu: "AGGH / similar",
-        tipus: "Renda fixa",
-        percentatge: 30,
-        criteri: "Estabilització",
-        justificacio:
-          "Redueix la volatilitat global de la cartera i aporta estabilitat davant escenaris adversos de mercat.",
-      },
-      {
-        nom: "ETF renda fixa curt termini EUR",
-        tickerOrientatiu: "IBGS / similar",
-        tipus: "Renda fixa",
-        percentatge: 15,
-        criteri: "Control de durada",
-        justificacio:
-          "Limita el risc de tipus d’interès i reforça el component defensiu de la cartera.",
-      },
-      {
-        nom: "ETF MSCI Emerging Markets",
-        tickerOrientatiu: "EIMI / similar",
-        tipus: "Renda variable emergent",
-        percentatge: 8,
-        criteri: "Creixement emergent",
-        justificacio:
-          "Afegeix exposició a economies amb major potencial de creixement, però amb un pes limitat pel seu risc superior.",
-      },
-      {
-        nom: "ETF renda variable Europa",
-        tickerOrientatiu: "IMEU / similar",
-        tipus: "Renda variable regional",
-        percentatge: 5,
-        criteri: "Biaix europeu",
-        justificacio:
-          "Complementa l’exposició global amb presència europea i redueix la dependència exclusiva dels Estats Units.",
-      },
-      {
-        nom: "Fons monetari EUR",
-        tickerOrientatiu: "Monetari EUR",
-        tipus: "Liquiditat",
-        percentatge: 5,
-        criteri: "Reserva operativa",
-        justificacio:
-          "Manté liquiditat disponible i redueix la necessitat de vendre actius en moments desfavorables.",
-      },
-      {
-        nom: "ETF REIT global",
-        tickerOrientatiu: "IWDP / similar",
-        tipus: "Alternatius líquids",
-        percentatge: 5,
-        criteri: "Diversificació immobiliària",
-        justificacio:
-          "Aporta una font de rendibilitat diferent de la renda variable i la renda fixa tradicionals.",
-      },
-    ];
-  }
-
-  if (perfil === "Dinàmic") {
-    return [
-      {
-        nom: "ETF MSCI World",
-        tickerOrientatiu: "IWDA / SWDA",
-        tipus: "Renda variable global desenvolupada",
-        percentatge: 45,
-        criteri: "Nucli global",
-        justificacio:
-          "Actua com a nucli de la cartera. Ofereix exposició global, diversificació sectorial i reducció del risc específic.",
-      },
-      {
-        nom: "ETF MSCI Emerging Markets",
-        tickerOrientatiu: "EIMI / similar",
-        tipus: "Renda variable emergent",
-        percentatge: 12,
-        criteri: "Potencial de creixement",
-        justificacio:
-          "Afegeix exposició a països emergents, assumint més volatilitat però amb potencial de rendibilitat superior a llarg termini.",
-      },
-      {
-        nom: "ETF Small Caps Global",
-        tickerOrientatiu: "IUSN / similar",
-        tipus: "Renda variable small caps",
-        percentatge: 8,
-        criteri: "Diversificació per mida",
-        justificacio:
-          "Permet exposició a empreses de menor capitalització, ampliant l’univers d’inversió més enllà de grans companyies.",
-      },
-      {
-        nom: "ETF renda variable Europa",
-        tickerOrientatiu: "IMEU / similar",
-        tipus: "Renda variable regional",
-        percentatge: 5,
-        criteri: "Complement europeu",
-        justificacio:
-          "Introdueix un biaix europeu moderat, útil per equilibrar la composició geogràfica de la renda variable.",
-      },
-      {
-        nom: "ETF renda fixa global coberta a EUR",
-        tickerOrientatiu: "AGGH / similar",
-        tipus: "Renda fixa",
-        percentatge: 20,
-        criteri: "Bloc estabilitzador",
-        justificacio:
-          "Redueix parcialment la volatilitat i millora la resistència de la cartera davant caigudes de mercat.",
-      },
-      {
-        nom: "Fons monetari EUR",
-        tickerOrientatiu: "Monetari EUR",
-        tipus: "Liquiditat",
-        percentatge: 5,
-        criteri: "Liquiditat mínima",
-        justificacio:
-          "Permet mantenir una petita reserva sense alterar excessivament l’objectiu de creixement.",
-      },
-      {
-        nom: "ETF REIT global",
-        tickerOrientatiu: "IWDP / similar",
-        tipus: "Alternatius líquids",
-        percentatge: 5,
-        criteri: "Diversificació alternativa",
-        justificacio:
-          "Aporta exposició immobiliària cotitzada i diversificació addicional dins d’una cartera orientada al creixement.",
-      },
-    ];
-  }
-
-  return [
-    {
-      nom: "ETF MSCI World",
-      tickerOrientatiu: "IWDA / SWDA",
-      tipus: "Renda variable global desenvolupada",
-      percentatge: 55,
-      criteri: "Nucli de creixement global",
-      justificacio:
-        "Actua com a nucli de la cartera. Ofereix exposició diversificada a empreses de països desenvolupats, redueix el risc específic i captura el creixement global a llarg termini.",
-    },
-    {
-      nom: "ETF MSCI Emerging Markets",
-      tickerOrientatiu: "EIMI / similar",
-      tipus: "Renda variable emergent",
-      percentatge: 15,
-      criteri: "Creixement emergent",
-      justificacio:
-        "Afegeix exposició a economies emergents amb major potencial de creixement, assumint més volatilitat. El pes es limita per controlar risc polític, regulatori i de divisa.",
-    },
-    {
-      nom: "ETF Small Caps Global",
-      tickerOrientatiu: "IUSN / similar",
-      tipus: "Renda variable global small caps",
-      percentatge: 10,
-      criteri: "Diversificació per capitalització",
-      justificacio:
-        "Incrementa la diversificació per mida empresarial i permet exposició a companyies de menor capitalització amb potencial de rendibilitat superior a llarg termini.",
-    },
-    {
-      nom: "ETF renda variable Europa",
-      tickerOrientatiu: "IMEU / similar",
-      tipus: "Renda variable regional",
-      percentatge: 10,
-      criteri: "Biaix europeu moderat",
-      justificacio:
-        "Complementa l’exposició global amb presència europea, útil per a un inversor resident a la zona euro i per reduir dependència exclusiva dels Estats Units.",
-    },
-    {
-      nom: "ETF renda fixa global coberta a EUR",
-      tickerOrientatiu: "AGGH / similar",
-      tipus: "Renda fixa",
-      percentatge: 5,
-      criteri: "Estabilització mínima",
-      justificacio:
-        "Funciona com a bloc estabilitzador mínim. La cobertura a EUR redueix el risc de divisa i aporta certa protecció en escenaris de caiguda de renda variable.",
-    },
-    {
-      nom: "ETF REIT global",
-      tickerOrientatiu: "IWDP / similar",
-      tipus: "Alternatius líquids",
-      percentatge: 5,
-      criteri: "Diversificació immobiliària",
-      justificacio:
-        "Aporta exposició immobiliària cotitzada i una font de rendibilitat diferent de la renda variable tradicional, mantenint liquiditat mitjançant format ETF.",
-    },
-  ];
+  const picks = PROFILE_SELECTION[perfil];
+  return picks
+    .slice(0, 8)
+    .map((pick) => {
+      const producte = PRODUCT_UNIVERSE.find((x) => x.id === pick.id);
+      if (!producte) return null;
+      return {
+        id: producte.id,
+        nom: producte.nom,
+        isin: producte.isin,
+        tickerOrientatiu: producte.tickerOrientatiu,
+        categoria: producte.categoria,
+        tipus: producte.tipus,
+        risc: producte.risc,
+        perfilRecomanat: producte.perfils.join(", "),
+        rol: producte.rol,
+        blocActiu: producte.blocActiu,
+        percentatge: pick.percentatge,
+        criteri: pick.criteri,
+        justificacio: pick.justificacio,
+      } satisfies ProducteCartera;
+    })
+    .filter((x): x is ProducteCartera => Boolean(x));
 }
 
 function calcularClient(client: Client): ClientResult {
@@ -397,6 +261,72 @@ function generarBacktestSimulat(perfil: Perfil) {
       sharpe: 0.39,
     },
   };
+}
+
+function benchmarkCompost(perfil: Perfil) {
+  const base =
+    perfil === "Conservador"
+      ? [
+          { component: "Global Aggregate Bond EUR Hedged", pes: 55, r: 3.1, v: 5.8 },
+          { component: "Euro Govt 1-3y", pes: 25, r: 2.3, v: 2.8 },
+          { component: "MSCI ACWI", pes: 15, r: 7.4, v: 16.5 },
+          { component: "Cash EUR", pes: 5, r: 1.7, v: 0.8 },
+        ]
+      : perfil === "Moderat"
+      ? [
+          { component: "MSCI ACWI", pes: 45, r: 7.4, v: 16.5 },
+          { component: "Global Aggregate Bond EUR Hedged", pes: 40, r: 3.1, v: 5.8 },
+          { component: "Euro Govt 1-3y", pes: 10, r: 2.3, v: 2.8 },
+          { component: "Global REIT", pes: 5, r: 5.9, v: 18.2 },
+        ]
+      : perfil === "Dinàmic"
+      ? [
+          { component: "MSCI ACWI", pes: 60, r: 7.4, v: 16.5 },
+          { component: "MSCI EM", pes: 12, r: 8.2, v: 20.8 },
+          { component: "MSCI World Small Cap", pes: 8, r: 8.1, v: 19.5 },
+          { component: "Global Aggregate Bond EUR Hedged", pes: 15, r: 3.1, v: 5.8 },
+          { component: "Global REIT", pes: 5, r: 5.9, v: 18.2 },
+        ]
+      : [
+          { component: "MSCI ACWI", pes: 62, r: 7.4, v: 16.5 },
+          { component: "NASDAQ 100", pes: 13, r: 10.2, v: 24.5 },
+          { component: "MSCI EM", pes: 10, r: 8.2, v: 20.8 },
+          { component: "World Energy", pes: 7, r: 7.8, v: 25.2 },
+          { component: "Global Aggregate Bond EUR Hedged", pes: 8, r: 3.1, v: 5.8 },
+        ];
+
+  const rendibilitat = base.reduce((acc, x) => acc + (x.pes / 100) * x.r, 0);
+  const volatilitat = Math.sqrt(base.reduce((acc, x) => acc + (x.pes / 100) ** 2 * x.v ** 2, 0));
+  return { composicio: base, rendibilitat, volatilitat };
+}
+
+function productesPerBloc(productes: ProducteCartera[]) {
+  const blocMap = new Map<string, number>();
+  for (const p of productes) blocMap.set(p.blocActiu, (blocMap.get(p.blocActiu) || 0) + p.percentatge);
+  return Array.from(blocMap.entries()).map(([bloc, pes]) => ({ bloc, pes }));
+}
+
+function riscVsRendibilitat(productes: ProducteCartera[]) {
+  const riskScore: Record<string, number> = { Baix: 5, Mitjà: 10, Alt: 16, "Molt alt": 24 };
+  return productes.map((p) => ({
+    nom: p.tickerOrientatiu,
+    risc: riskScore[p.risc] || 12,
+    rendiment: p.risc === "Baix" ? 2.5 : p.risc === "Mitjà" ? 5.2 : p.risc === "Alt" ? 8.1 : 10.5,
+  }));
+}
+
+function drawdownSeries(backtest: ReturnType<typeof generarBacktestSimulat>) {
+  let maxC = backtest.data[0].cartera;
+  let maxB = backtest.data[0].benchmark;
+  return backtest.data.map((d) => {
+    maxC = Math.max(maxC, d.cartera);
+    maxB = Math.max(maxB, d.benchmark);
+    return {
+      any: d.any,
+      carteraDD: ((d.cartera - maxC) / maxC) * 100,
+      benchmarkDD: ((d.benchmark - maxB) / maxB) * 100,
+    };
+  });
 }
 
 export default function Home() {
@@ -663,6 +593,11 @@ export default function Home() {
 function Informe({ result }: { result: ClientResult }) {
   const productes = productesPerPerfil(result.perfilFinal);
   const backtest = generarBacktestSimulat(result.perfilFinal);
+  const benchmark = benchmarkCompost(result.perfilFinal);
+  const blocData = productesPerBloc(productes);
+  const riscReturn = riscVsRendibilitat(productes);
+  const drawdowns = drawdownSeries(backtest);
+  const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id)).slice(0, 6);
 
   return (
     <div style={{ display: "grid", gap: 24 }}>
@@ -677,6 +612,7 @@ function Informe({ result }: { result: ClientResult }) {
       </div>
 
       <MethodologyBox />
+      <BenchmarkCompostBox benchmark={benchmark} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
         <MiniMetric title="Renda variable" value={`${result.cartera.rendaVariable}%`} />
@@ -695,15 +631,38 @@ function Informe({ result }: { result: ClientResult }) {
       <div>
         <h3 style={sectionTitle}>Univers d’inversió seleccionat</h3>
         <SimpleTable
-          headers={["Instrument", "Ticker", "Tipus", "Pes", "Criteri", "Justificació"]}
+          headers={["Instrument", "ISIN", "Categoria", "Tipus", "Risc", "Perfil recomanat", "Rol", "Pes", "Criteri", "Justificació"]}
           rows={productes.map((p) => [
             p.nom,
-            p.tickerOrientatiu,
-            p.tipus,
+            p.isin,
+            p.categoria,
+            `${p.tipus} (${p.tickerOrientatiu})`,
+            <RiskBadge key={`${p.id}-r`} risc={p.risc} />,
+            p.perfilRecomanat,
+            p.rol,
             `${p.percentatge}%`,
             p.criteri,
             p.justificacio,
           ])}
+        />
+      </div>
+
+      <Panel title="Visualització professional de la cartera">
+        <ProfessionalCharts
+          blocData={blocData}
+          productes={productes}
+          backtest={backtest}
+          riscReturn={riscReturn}
+          drawdowns={drawdowns}
+          benchmark={benchmark}
+        />
+      </Panel>
+
+      <div>
+        <h3 style={sectionTitle}>Alternatives recomanades (no incloses al nucli)</h3>
+        <SimpleTable
+          headers={["Producte", "ISIN", "Categoria", "Tipus", "Risc", "Rol"]}
+          rows={alternatives.map((a) => [a.nom, a.isin, a.categoria, a.tipus, <RiskBadge key={`${a.id}-alt`} risc={a.risc} />, a.rol])}
         />
       </div>
 
@@ -724,6 +683,7 @@ function Informe({ result }: { result: ClientResult }) {
       />
 
       <DefenseBox />
+      <LegalNotice />
     </div>
   );
 }
@@ -738,6 +698,147 @@ function MethodologyBox() {
       <p style={paragraph}>
         El procés diferencia dues decisions: primer, l’asset allocation estratègica, que determina el nivell de risc assumit; i segon, la implementació mitjançant ETFs, escollits per criteris de diversificació, cost, liquiditat, simplicitat i adequació al client.
       </p>
+    </div>
+  );
+}
+
+function BenchmarkCompostBox({ benchmark }: { benchmark: ReturnType<typeof benchmarkCompost> }) {
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, padding: 18 }}>
+      <h3 style={sectionTitle}>Benchmark compost acadèmic</h3>
+      <p style={paragraph}>
+        El benchmark no és un únic índex; és una combinació ponderada d’índexs representatius segons perfil. Això evita comparar una cartera conservadora amb un índex 100% accions i millora la consistència metodològica en la defensa acadèmica.
+      </p>
+      <SimpleTable
+        headers={["Component de benchmark", "Pes", "Rendibilitat esperada", "Volatilitat estimada"]}
+        rows={benchmark.composicio.map((c) => [c.component, `${c.pes}%`, formatPct(c.r), formatPct(c.v)])}
+      />
+      <div style={{ marginTop: 10, color: COLORS.textMedium, fontSize: 13 }}>
+        <strong>Resultat compost:</strong> Rendibilitat esperada {formatPct(benchmark.rendibilitat)} · Volatilitat estimada {formatPct(benchmark.volatilitat)}.
+      </div>
+    </div>
+  );
+}
+
+function ProfessionalCharts({
+  blocData,
+  productes,
+  backtest,
+  riscReturn,
+  drawdowns,
+  benchmark,
+}: {
+  blocData: Array<{ bloc: string; pes: number }>;
+  productes: ProducteCartera[];
+  backtest: ReturnType<typeof generarBacktestSimulat>;
+  riscReturn: Array<{ nom: string; risc: number; rendiment: number }>;
+  drawdowns: Array<{ any: string; carteraDD: number; benchmarkDD: number }>;
+  benchmark: ReturnType<typeof benchmarkCompost>;
+}) {
+  const comparacio = [
+    { serie: "Cartera", rendibilitat: backtest.metrics.rendibilitatAnualitzada, volatilitat: backtest.metrics.volatilitat, drawdown: backtest.metrics.maxDrawdown },
+    { serie: "Benchmark compost", rendibilitat: benchmark.rendibilitat, volatilitat: benchmark.volatilitat, drawdown: backtest.benchmarkMetrics.maxDrawdown },
+  ];
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Pes per producte</h4>
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer>
+              <BarChart data={productes}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="tickerOrientatiu" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="percentatge" fill={COLORS.primaryDark} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Asset allocation (per bloc d’actiu)</h4>
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={blocData} dataKey="pes" nameKey="bloc" innerRadius={45} outerRadius={90} label />
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Comparació cartera vs benchmark</h4>
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer>
+              <BarChart data={comparacio}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="serie" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="rendibilitat" fill={COLORS.green} name="Rendibilitat" />
+                <Bar dataKey="volatilitat" fill={COLORS.gold} name="Volatilitat" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Risc vs rendibilitat (productes)</h4>
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer>
+              <ScatterChart>
+                <CartesianGrid />
+                <XAxis dataKey="risc" name="Risc" unit="%" />
+                <YAxis dataKey="rendiment" name="Rendiment" unit="%" />
+                <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                <Scatter name="Productes" data={riscReturn} fill={COLORS.primaryDark} />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+        <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Rendiment històric simulat (cartera vs benchmark)</h4>
+        <div style={{ height: 290 }}>
+          <ResponsiveContainer>
+            <LineChart data={backtest.data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="any" />
+              <YAxis />
+              <Tooltip formatter={(value) => formatEuro(Number(value))} />
+              <Legend />
+              <Line dataKey="cartera" stroke={COLORS.primaryDark} strokeWidth={3} dot={false} />
+              <Line dataKey="benchmark" stroke={COLORS.gold} strokeWidth={3} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+        <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Drawdown (caiguda des de màxim)</h4>
+        <div style={{ height: 260 }}>
+          <ResponsiveContainer>
+            <AreaChart data={drawdowns}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="any" />
+              <YAxis tickFormatter={(v) => `${v.toFixed(0)}%`} />
+              <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
+              <Legend />
+              <Area type="monotone" dataKey="carteraDD" stroke={COLORS.primaryDark} fill="#d6e7e1" />
+              <Area type="monotone" dataKey="benchmarkDD" stroke={COLORS.gold} fill="#f2e9da" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }
@@ -809,6 +910,14 @@ function DefenseBox() {
       <p style={{ margin: 0, lineHeight: 1.8, fontSize: 14 }}>
         La cartera no respon a una selecció subjectiva, sinó a un procés estructurat basat en perfil de risc, horitzó temporal, capacitat financera i criteris de diversificació. Els ETFs permeten reduir risc específic, controlar costos i implementar una cartera global de manera eficient. La proposta és acadèmica i no constitueix assessorament financer regulat ni execució d’ordres.
       </p>
+    </div>
+  );
+}
+
+function LegalNotice() {
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, background: "#fff8e8", padding: 14, color: COLORS.textMedium, fontSize: 13, lineHeight: 1.7 }}>
+      <strong>Avís legal i educatiu:</strong> Aquesta recomanació té finalitat educativa i no constitueix assessorament financer personalitzat regulat.
     </div>
   );
 }
@@ -907,7 +1016,7 @@ function MiniMetric({ title, value }: { title: string; value: string }) {
   );
 }
 
-function SimpleTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
+function SimpleTable({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
   return (
     <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>
@@ -937,6 +1046,22 @@ function Td({ children }: { children: ReactNode }) {
     <td style={{ padding: "12px 14px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.textMedium, fontSize: 13, lineHeight: 1.6, verticalAlign: "top" }}>
       {children}
     </td>
+  );
+}
+
+function RiskBadge({ risc }: { risc: string }) {
+  const colors =
+    risc === "Baix"
+      ? { bg: "#e8f6ee", fg: "#1a6b4a" }
+      : risc === "Mitjà"
+      ? { bg: "#f8f0df", fg: "#9a6e22" }
+      : risc === "Alt"
+      ? { bg: "#fdeee8", fg: "#b1412c" }
+      : { bg: "#f9e8ee", fg: "#7a2950" };
+  return (
+    <span style={{ background: colors.bg, color: colors.fg, fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 999 }}>
+      {risc}
+    </span>
   );
 }
 
