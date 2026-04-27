@@ -156,40 +156,40 @@ const PRODUCT_UNIVERSE: UniverseProduct[] = [
 
 const PROFILE_SELECTION: Record<Perfil, Array<{ id: string; percentatge: number; criteri: string; justificacio: string }>> = {
   Conservador: [
-    { id: "cash", percentatge: 10, criteri: "Reserva de liquiditat", justificacio: "Cobertura d’imprevistos i reducció del risc de venda forçada." },
-    { id: "ibgs", percentatge: 35, criteri: "Defensa de curta durada", justificacio: "Durada moderada i menor sensibilitat a tipus d’interès." },
-    { id: "aggh", percentatge: 30, criteri: "Diversificació de renda fixa", justificacio: "Bloc estabilitzador global amb cobertura a EUR." },
-    { id: "world-core", percentatge: 20, criteri: "Core de creixement prudent", justificacio: "Exposició global diversificada amb pes controlat." },
-    { id: "div-jpm", percentatge: 5, criteri: "Renda periòdica", justificacio: "Complement d’ingressos en perfil defensiu." },
+    { id: "cash", percentatge: 18, criteri: "Reserva de liquiditat", justificacio: "Cobertura d’imprevistos i reducció del risc de venda forçada." },
+    { id: "ibgs", percentatge: 37, criteri: "Defensa de curta durada", justificacio: "Durada moderada i baixa sensibilitat a tipus d’interès." },
+    { id: "aggh", percentatge: 30, criteri: "Estabilització global", justificacio: "Bloc principal de renda fixa amb volatilitat continguda." },
+    { id: "world-core", percentatge: 10, criteri: "Renda variable mínima", justificacio: "Exposició global limitada per preservar capital." },
+    { id: "div-jpm", percentatge: 5, criteri: "Income prudent", justificacio: "Petit complement de rendes en perfil conservador." },
   ],
   Moderat: [
-    { id: "world-core", percentatge: 35, criteri: "Nucli global", justificacio: "Motor principal de creixement ajustat al risc moderat." },
-    { id: "aggh", percentatge: 28, criteri: "Estabilització", justificacio: "Reduceix volatilitat total de cartera." },
-    { id: "ibgs", percentatge: 12, criteri: "Durada curta", justificacio: "Amortidor addicional davant cicles de tipus." },
+    { id: "world-core", percentatge: 33, criteri: "Nucli global", justificacio: "Motor principal de creixement equilibrat." },
+    { id: "aggh", percentatge: 30, criteri: "Estabilització", justificacio: "Redueix la volatilitat total de cartera." },
+    { id: "ibgs", percentatge: 15, criteri: "Durada curta", justificacio: "Amortidor en entorns de tipus d’interès." },
     { id: "em-vg", percentatge: 8, criteri: "Creixement emergent", justificacio: "Potencial estructural amb pes limitat." },
-    { id: "div-vg", percentatge: 7, criteri: "Income", justificacio: "Component de dividends per estabilitzar retorns." },
+    { id: "div-vg", percentatge: 6, criteri: "Income", justificacio: "Component de dividends per estabilitzar retorns." },
     { id: "cash", percentatge: 5, criteri: "Liquiditat tàctica", justificacio: "Marge per reequilibris." },
-    { id: "reits", percentatge: 5, criteri: "Diversificació real asset", justificacio: "Exposició immobiliària cotitzada." },
+    { id: "reits", percentatge: 3, criteri: "Diversificació real asset", justificacio: "Petit satèl·lit immobiliari." },
   ],
   Dinàmic: [
-    { id: "world-core", percentatge: 35, criteri: "Core global", justificacio: "Base d’exposició global de renda variable." },
-    { id: "em-vg", percentatge: 12, criteri: "Emergents", justificacio: "Creixement a llarg termini." },
-    { id: "small-global-vg", percentatge: 8, criteri: "Small caps", justificacio: "Prima de mida i diversificació." },
-    { id: "nasdaq-my", percentatge: 10, criteri: "Tecnologia large cap", justificacio: "Exposició a innovació i creixement." },
-    { id: "aggh", percentatge: 15, criteri: "Control de risc", justificacio: "Bloc de renda fixa per contenir drawdowns." },
+    { id: "world-core", percentatge: 38, criteri: "Core global", justificacio: "Base principal de renda variable global." },
+    { id: "em-vg", percentatge: 14, criteri: "Emergents", justificacio: "Creixement addicional a llarg termini." },
+    { id: "small-global-vg", percentatge: 12, criteri: "Small caps", justificacio: "Prima de mida i diversificació." },
+    { id: "nasdaq-my", percentatge: 10, criteri: "Tecnologia moderada", justificacio: "Exposició tecnològica controlada." },
+    { id: "aggh", percentatge: 10, criteri: "Control de risc", justificacio: "Bloc de renda fixa reduït però estabilitzador." },
     { id: "reits", percentatge: 5, criteri: "Alternatiu líquid", justificacio: "Diversificació de fonts de retorn." },
     { id: "div-jpm", percentatge: 5, criteri: "Income quality", justificacio: "Empreses madures amb dividends." },
-    { id: "cash", percentatge: 10, criteri: "Gestió tàctica", justificacio: "Reserva per aportacions i reequilibris." },
+    { id: "cash", percentatge: 6, criteri: "Gestió tàctica", justificacio: "Reserva per reequilibris i oportunitats." },
   ],
   Agressiu: [
-    { id: "world-core", percentatge: 26, criteri: "Core global", justificacio: "Base diversificada per evitar concentració extrema." },
-    { id: "em-vg", percentatge: 15, criteri: "Emergents", justificacio: "Elevat potencial de creixement." },
-    { id: "small-global-ish", percentatge: 10, criteri: "Small caps global", justificacio: "Increment de beta i prima de mida." },
-    { id: "qqq", percentatge: 10, criteri: "Nasdaq 100", justificacio: "Biaix a mega-cap tecnològiques." },
-    { id: "ai-polar", percentatge: 8, criteri: "Temàtica IA", justificacio: "Exposició específica a disrupció tecnològica." },
-    { id: "energy-bgf", percentatge: 8, criteri: "Temàtica energia", justificacio: "Diversificació cíclica i de matèries primeres." },
-    { id: "aggh", percentatge: 13, criteri: "Estabilització mínima", justificacio: "Petit bloc per controlar risc agregat." },
-    { id: "cash", percentatge: 10, criteri: "Liquiditat operativa", justificacio: "Reserves per volatilitat i oportunitats." },
+    { id: "world-core", percentatge: 32, criteri: "Core global", justificacio: "Base principal amb elevada exposició a creixement global." },
+    { id: "em-vg", percentatge: 16, criteri: "Emergents", justificacio: "Potencial elevat amb volatilitat superior." },
+    { id: "small-global-vg", percentatge: 14, criteri: "Small caps", justificacio: "Més beta i potencial de llarg termini." },
+    { id: "nasdaq-my", percentatge: 12, criteri: "Tecnologia", justificacio: "Exposició forta a tecnologia nord-americana." },
+    { id: "ai-polar", percentatge: 10, criteri: "IA temàtica", justificacio: "Satèl·lit d’alt risc per disrupció." },
+    { id: "energy-bgf", percentatge: 8, criteri: "Sectorial energia", justificacio: "Satèl·lit cíclic per diversificar drivers de retorn." },
+    { id: "aggh", percentatge: 5, criteri: "Renda fixa residual", justificacio: "Mínim coixí defensiu." },
+    { id: "cash", percentatge: 3, criteri: "Liquiditat mínima", justificacio: "Reserva operativa bàsica." },
   ],
 };
 
@@ -361,6 +361,39 @@ function metriquesComparatives(backtest: ReturnType<typeof generarBacktestSimula
   ];
 }
 
+function notesPerfil(perfil: Perfil) {
+  if (perfil === "Conservador") {
+    return [
+      "Renda variable baixa per prioritzar preservació de capital.",
+      "Pes dominant en renda fixa curta i global coberta a EUR.",
+      "Sense productes temàtics d’alt risc.",
+      "Risc principal: pèrdua de poder adquisitiu si la inflació supera el retorn.",
+    ];
+  }
+  if (perfil === "Moderat") {
+    return [
+      "Equilibri entre creixement (renda variable) i estabilització (renda fixa).",
+      "Emergents amb pes limitat per no disparar volatilitat.",
+      "Satèl·lits de dividends/REITs amb funció diversificadora.",
+      "Risc principal: drawdowns moderats en cicles adversos.",
+    ];
+  }
+  if (perfil === "Dinàmic") {
+    return [
+      "Major pes en renda variable global, small caps i emergents.",
+      "Tecnologia present però amb control de pes.",
+      "Renda fixa reduïda com a amortidor parcial.",
+      "Risc principal: volatilitat rellevant en mercats baixistes.",
+    ];
+  }
+  return [
+    "Predomini de renda variable i satèl·lits d’alt creixement.",
+    "Exposició a IA/tecnologia/sectorials amb alta volatilitat.",
+    "Renda fixa i liquiditat mínimes.",
+    "Risc principal: caigudes temporals intenses i elevada dispersió de resultats.",
+  ];
+}
+
 function productesPerBloc(productes: ProducteCartera[]) {
   const blocMap = new Map<string, number>();
   for (const p of productes) blocMap.set(p.blocActiu, (blocMap.get(p.blocActiu) || 0) + p.percentatge);
@@ -480,8 +513,6 @@ export default function Home() {
     setGeneratingPdf(true);
     try {
       const safeName = (resultat.row.nom || "client").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      const win = window.open("", "_blank", "noopener,noreferrer,width=1100,height=900");
-      if (!win) return;
       const printableHtml = `
         <html>
           <head>
@@ -498,11 +529,22 @@ export default function Home() {
           <body>${pdfRoot.innerHTML}</body>
         </html>
       `;
-      win.document.open();
-      win.document.write(printableHtml);
-      win.document.close();
-      win.focus();
-      setTimeout(() => win.print(), 400);
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      document.body.appendChild(iframe);
+      iframe.srcdoc = printableHtml;
+      iframe.onload = () => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 800);
+      };
     } finally {
       setGeneratingPdf(false);
     }
@@ -757,6 +799,7 @@ function Informe({
   const monteCarlo = simulacioMonteCarlo(result);
   const compClasse = comparacioClasseActiu(result.cartera, benchmark);
   const taulaComparacio = metriquesComparatives(backtest, benchmark);
+  const bulletsPerfil = notesPerfil(result.perfilFinal);
   const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id));
 
   return (
@@ -786,6 +829,12 @@ function Informe({
             headers={["Classe d’actiu", "Producte", "ISIN", "Tipus", "Gestió", "Pes", "Rol", "Benchmark referència", "Funció"]}
             rows={productes.map((p) => [p.blocActiu, p.nom, p.isin, p.tipus, p.gestio, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.justificacio])}
           />
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <h4 style={{ margin: "0 0 8px 0", color: COLORS.primaryDark }}>Per què aquesta cartera és diferent per al teu perfil?</h4>
+          <ul style={{ margin: 0, paddingLeft: 18, color: COLORS.textMedium, lineHeight: 1.75 }}>
+            {bulletsPerfil.map((b) => <li key={b}>{b}</li>)}
+          </ul>
         </div>
       </Panel>
 
@@ -832,8 +881,6 @@ function Informe({
         <div style={{ height: 12 }} />
         <MonteCarloBlock mc={monteCarlo} />
       </Panel>
-
-      <MonteCarloBlock mc={monteCarlo} />
 
       <ProfessionalBox
         title="Decisió de prudència"
@@ -1046,14 +1093,24 @@ function ProductGroups({ alternatives }: { alternatives: UniverseProduct[] }) {
 }
 
 function FinalConclusion({ result }: { result: ClientResult }) {
+  const tesi =
+    result.perfilFinal === "Conservador"
+      ? "Aquesta proposta prioritza preservació de capital i estabilitat."
+      : result.perfilFinal === "Moderat"
+      ? "Aquesta proposta equilibra creixement i control de volatilitat."
+      : result.perfilFinal === "Dinàmic"
+      ? "Aquesta proposta busca creixement sostingut assumint volatilitat moderada-alta."
+      : "Aquesta proposta maximitza potencial de creixement assumint elevada volatilitat.";
   return (
     <div style={{ border: `1px solid ${COLORS.border}`, background: "#fafcfb", padding: 18 }}>
       <SectionBadge text="Conclusió final" />
       <ul style={{ margin: 0, paddingLeft: 20, color: COLORS.textMedium, lineHeight: 1.8, fontSize: 14 }}>
-        <li>Aquesta cartera encaixa amb el perfil {result.perfilFinal.toLowerCase()} perquè alinea capacitat financera, tolerància i horitzó temporal.</li>
-        <li>Riscos principals: volatilitat de renda variable, risc de mercat global, risc temàtic en satèl·lits i possible desviació respecte objectiu.</li>
-        <li>Revisió recomanada: com a mínim trimestral i sempre que hi hagi canvis personals rellevants (ingressos, objectiu o horitzó).</li>
-        <li>No és assessorament financer real: és una proposta acadèmica i educativa basada en supòsits simplificats.</li>
+        <li>Perfil detectat: <strong>{result.perfilFinal}</strong>. {tesi}</li>
+        <li>Encaix de cartera: combina actius core i satèl·lits en proporcions coherents amb la teva tolerància i capacitat de risc.</li>
+        <li>Riscos principals: volatilitat de mercat, possibles drawdowns temporals i desviacions respecte retorn esperat.</li>
+        <li>Horitzó recomanat: mínim {Math.max(3, Number(result.row.horitzoAnys || 5))} anys per maximitzar la consistència de la proposta.</li>
+        <li>Revisió recomanada: trimestral i sempre que canviï situació personal, objectiu o tolerància al risc.</li>
+        <li>Recordatori: és una proposta acadèmica; la simulació no garanteix resultats futurs.</li>
       </ul>
     </div>
   );
@@ -1206,6 +1263,9 @@ function ProfessionalCharts({
               </ScatterChart>
             </ResponsiveContainer>
           </div>
+          <p style={{ ...paragraph, marginTop: 8, fontSize: 12.5 }}>
+            Aquest gràfic mostra com la cartera proposada i els seus satèl·lits se situen en relació amb el benchmark compost: més a la dreta implica més volatilitat, més amunt implica major rendibilitat esperada.
+          </p>
         </div>
       </div>
 
