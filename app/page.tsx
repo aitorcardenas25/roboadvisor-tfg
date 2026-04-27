@@ -329,6 +329,48 @@ function drawdownSeries(backtest: ReturnType<typeof generarBacktestSimulat>) {
   });
 }
 
+function simulacioMonteCarlo(result: ClientResult) {
+  const anys = Math.max(3, Math.min(30, Number(result.row.horitzoAnys || 10)));
+  const capitalInicial = 10000 + Math.max(0, result.metriques.excedentMensual) * 12;
+  const aportacioAnual = Math.max(0, result.metriques.excedentMensual * 12 * 0.4);
+  const rendEsperat = result.perfilFinal === "Conservador" ? 0.035 : result.perfilFinal === "Moderat" ? 0.052 : result.perfilFinal === "Dinàmic" ? 0.069 : 0.082;
+  const volatilitat = result.perfilFinal === "Conservador" ? 0.055 : result.perfilFinal === "Moderat" ? 0.092 : result.perfilFinal === "Dinàmic" ? 0.135 : 0.18;
+
+  const pessimista = [{ any: 0, valor: capitalInicial }];
+  const esperat = [{ any: 0, valor: capitalInicial }];
+  const optimista = [{ any: 0, valor: capitalInicial }];
+
+  let p = capitalInicial;
+  let e = capitalInicial;
+  let o = capitalInicial;
+
+  for (let any = 1; any <= anys; any++) {
+    p = p * (1 + rendEsperat - volatilitat * 0.65) + aportacioAnual;
+    e = e * (1 + rendEsperat) + aportacioAnual;
+    o = o * (1 + rendEsperat + volatilitat * 0.55) + aportacioAnual;
+    pessimista.push({ any, valor: Math.round(p) });
+    esperat.push({ any, valor: Math.round(e) });
+    optimista.push({ any, valor: Math.round(o) });
+  }
+
+  const importObjectiu = Number(result.row.importObjectiu || 0);
+  const probAssolir = importObjectiu > 0 ? Math.min(95, Math.max(8, Math.round(((e - 0.4 * p) / importObjectiu) * 100))) : 72;
+  const valorFinalEsperat = esperat[esperat.length - 1].valor;
+  const rang = {
+    min: pessimista[pessimista.length - 1].valor,
+    max: optimista[optimista.length - 1].valor,
+  };
+
+  const trajectoria = esperat.map((row, i) => ({
+    any: row.any,
+    pessimista: pessimista[i].valor,
+    esperat: row.valor,
+    optimista: optimista[i].valor,
+  }));
+
+  return { trajectoria, probAssolir, valorFinalEsperat, rang, anys };
+}
+
 export default function Home() {
   const [client, setClient] = useState<Client>(initialClient);
   const [resultat, setResultat] = useState<ClientResult | null>(null);
@@ -597,7 +639,8 @@ function Informe({ result }: { result: ClientResult }) {
   const blocData = productesPerBloc(productes);
   const riscReturn = riscVsRendibilitat(productes);
   const drawdowns = drawdownSeries(backtest);
-  const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id)).slice(0, 6);
+  const monteCarlo = simulacioMonteCarlo(result);
+  const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id));
 
   return (
     <div style={{ display: "grid", gap: 24 }}>
@@ -611,6 +654,7 @@ function Informe({ result }: { result: ClientResult }) {
         <button onClick={() => window.print()} style={buttonStyle}>Imprimir / PDF</button>
       </div>
 
+      <ExecutiveSummary result={result} />
       <MethodologyBox />
       <BenchmarkCompostBox benchmark={benchmark} />
 
@@ -623,7 +667,7 @@ function Informe({ result }: { result: ClientResult }) {
 
       <ProfessionalBox
         title="Lectura de l’asset allocation"
-        text={`La cartera ${result.perfilFinal.toLowerCase()} assigna el pes principal a les classes d’actiu coherents amb el nivell de risc detectat. L’assignació separa la decisió estratègica de risc —asset allocation— de la selecció concreta d’instruments —ETFs—, seguint una metodologia pròpia dels serveis de gestió indexada i RoboAdvisors.`}
+        text={`La cartera ${result.perfilFinal.toLowerCase()} utilitza una estructura nucli-satèl·lit: primer es defineix el risc estratègic (asset allocation) i després es trien instruments concrets per implementar-lo amb control de risc i cost.`}
       />
 
       <CriteriaGrid />
@@ -659,12 +703,11 @@ function Informe({ result }: { result: ClientResult }) {
       </Panel>
 
       <div>
-        <h3 style={sectionTitle}>Alternatives recomanades (no incloses al nucli)</h3>
-        <SimpleTable
-          headers={["Producte", "ISIN", "Categoria", "Tipus", "Risc", "Rol"]}
-          rows={alternatives.map((a) => [a.nom, a.isin, a.categoria, a.tipus, <RiskBadge key={`${a.id}-alt`} risc={a.risc} />, a.rol])}
-        />
+        <h3 style={sectionTitle}>Univers complementari</h3>
+        <ProductGroups alternatives={alternatives} />
       </div>
+
+      <MonteCarloBlock mc={monteCarlo} />
 
       <ProfessionalBox
         title="Decisió de prudència"
@@ -677,11 +720,8 @@ function Informe({ result }: { result: ClientResult }) {
 
       <BacktestBlock backtest={backtest} />
 
-      <ProfessionalBox
-        title="Explicació final per al client"
-        text={`Es recomana una cartera ${result.perfilFinal.toLowerCase()} perquè el model detecta ${result.motius.join(", ")}. La proposta no executa inversions reals i té finalitat acadèmica. Serveix per mostrar com un RoboAdvisor pot transformar informació financera i conductual en una cartera model coherent, diversificada i defensable.`}
-      />
-
+      <ProfessionalBox title="Explicació final per al client" text={`Es recomana una cartera ${result.perfilFinal.toLowerCase()} perquè el model detecta ${result.motius.join(", ")}.`} />
+      <FinalConclusion result={result} />
       <DefenseBox />
       <LegalNotice />
     </div>
@@ -698,6 +738,115 @@ function MethodologyBox() {
       <p style={paragraph}>
         El procés diferencia dues decisions: primer, l’asset allocation estratègica, que determina el nivell de risc assumit; i segon, la implementació mitjançant ETFs, escollits per criteris de diversificació, cost, liquiditat, simplicitat i adequació al client.
       </p>
+    </div>
+  );
+}
+
+function SectionBadge({ text }: { text: string }) {
+  return (
+    <span style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: COLORS.primaryDark, background: COLORS.primaryLight, padding: "4px 10px", borderRadius: 999, marginBottom: 8 }}>
+      {text}
+    </span>
+  );
+}
+
+function ExecutiveSummary({
+  result,
+}: {
+  result: ClientResult;
+}) {
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, padding: 18 }}>
+      <SectionBadge text="Resum executiu" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <MiniMetric title="Perfil final" value={result.perfilFinal} />
+        <MiniMetric title="Score total" value={`${result.scoreFinal}/100`} />
+        <MiniMetric title="Objectiu" value={String(result.row.objectiuPrincipal || "-")} />
+        <MiniMetric title="Horitzó" value={`${result.row.horitzoAnys || "-"} anys`} />
+        <MiniMetric title="Asset mix" value={`${result.cartera.rendaVariable}/${result.cartera.rendaFixa}/${result.cartera.liquiditat}/${result.cartera.alternatius}`} />
+      </div>
+      <div style={{ marginTop: 14, color: COLORS.textMedium, lineHeight: 1.7, fontSize: 14 }}>
+        <strong>Recomanació principal:</strong>
+        <ul style={{ margin: "8px 0 0 18px" }}>
+          <li>La cartera prioritza coherència entre capacitat de risc, horitzó i tolerància psicològica.</li>
+          <li>El pes principal recau en actius core diversificats, complementats amb satèl·lits selectius.</li>
+          <li>Es manté control de volatilitat mitjançant bloc defensiu i reequilibris periòdics.</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function MonteCarloBlock({ mc }: { mc: ReturnType<typeof simulacioMonteCarlo> }) {
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, padding: 18 }}>
+      <SectionBadge text="Simulació Monte Carlo" />
+      <p style={paragraph}>
+        La simulació Monte Carlo permet estimar diferents trajectòries possibles d’una cartera incorporant rendibilitat esperada i volatilitat.
+        No prediu el futur, però ajuda a visualitzar el risc i la incertesa.
+      </p>
+      <div style={{ height: 300 }}>
+        <ResponsiveContainer>
+          <LineChart data={mc.trajectoria}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="any" />
+            <YAxis tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`} />
+            <Tooltip formatter={(v) => formatEuro(Number(v))} />
+            <Legend />
+            <Line type="monotone" dataKey="pessimista" stroke="#b1412c" dot={false} strokeWidth={2} />
+            <Line type="monotone" dataKey="esperat" stroke="#0c2d2a" dot={false} strokeWidth={3} />
+            <Line type="monotone" dataKey="optimista" stroke="#1a6b4a" dot={false} strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <SimpleTable
+        headers={["Mètrica", "Resultat"]}
+        rows={[
+          ["Escenari pessimista (final)", formatEuro(mc.rang.min)],
+          ["Escenari esperat (final)", formatEuro(mc.valorFinalEsperat)],
+          ["Escenari optimista (final)", formatEuro(mc.rang.max)],
+          ["Probabilitat estimada d’assolir l’objectiu", `${mc.probAssolir}%`],
+          ["Valor final estimat de cartera", formatEuro(mc.valorFinalEsperat)],
+          ["Rang de resultats possibles", `${formatEuro(mc.rang.min)} - ${formatEuro(mc.rang.max)}`],
+        ]}
+      />
+    </div>
+  );
+}
+
+function ProductGroups({ alternatives }: { alternatives: UniverseProduct[] }) {
+  const groups: Array<{ title: string; filter: (p: UniverseProduct) => boolean }> = [
+    { title: "Alternatives complementàries", filter: (p) => p.rol === "Satellite" || p.rol === "Core" },
+    { title: "Productes temàtics d’alt risc", filter: (p) => p.rol === "Thematic/high risk" },
+    { title: "Productes de dividends / renda", filter: (p) => p.rol === "Income/dividend" },
+    { title: "Productes defensius / liquiditat", filter: (p) => p.rol === "Defensive/liquidity" },
+  ];
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      {groups.map((group) => {
+        const list = alternatives.filter(group.filter).slice(0, 5);
+        if (!list.length) return null;
+        return (
+          <div key={group.title}>
+            <h4 style={{ margin: "0 0 8px 0", color: COLORS.primaryDark }}>{group.title}</h4>
+            <SimpleTable headers={["Producte", "ISIN", "Categoria", "Tipus", "Risc", "Rol"]} rows={list.map((a) => [a.nom, a.isin, a.categoria, a.tipus, <RiskBadge key={`${a.id}-${group.title}`} risc={a.risc} />, a.rol])} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FinalConclusion({ result }: { result: ClientResult }) {
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, background: "#fafcfb", padding: 18 }}>
+      <SectionBadge text="Conclusió final" />
+      <ul style={{ margin: 0, paddingLeft: 20, color: COLORS.textMedium, lineHeight: 1.8, fontSize: 14 }}>
+        <li>Aquesta cartera encaixa amb el perfil {result.perfilFinal.toLowerCase()} perquè alinea capacitat financera, tolerància i horitzó temporal.</li>
+        <li>Riscos principals: volatilitat de renda variable, risc de mercat global, risc temàtic en satèl·lits i possible desviació respecte objectiu.</li>
+        <li>Revisió recomanada: com a mínim trimestral i sempre que hi hagi canvis personals rellevants (ingressos, objectiu o horitzó).</li>
+        <li>No és assessorament financer real: és una proposta acadèmica i educativa basada en supòsits simplificats.</li>
+      </ul>
     </div>
   );
 }
@@ -871,7 +1020,7 @@ function CriteriaGrid() {
 function BacktestBlock({ backtest }: { backtest: ReturnType<typeof generarBacktestSimulat> }) {
   return (
     <div style={{ border: `1px solid ${COLORS.border}`, padding: 18, background: COLORS.white }}>
-      <h3 style={sectionTitle}>Simulació històrica orientativa vs benchmark</h3>
+      <h3 style={sectionTitle}>Simulació històrica orientativa vs benchmark compost</h3>
       <p style={paragraph}>
         La simulació no utilitza dades reals de mercat descarregades automàticament, sinó una aproximació acadèmica basada en paràmetres esperats de rendibilitat, volatilitat i drawdown per perfil. Serveix per il·lustrar el comportament esperat de la cartera, però no constitueix una predicció ni una recomanació d’inversió real.
       </p>
@@ -885,13 +1034,13 @@ function BacktestBlock({ backtest }: { backtest: ReturnType<typeof generarBackte
             <Tooltip formatter={(value) => formatEuro(Number(value))} />
             <Legend />
             <Line type="monotone" dataKey="cartera" name="Cartera recomanada" stroke="#0c2d2a" strokeWidth={3} dot={false} />
-            <Line type="monotone" dataKey="benchmark" name="Benchmark global" stroke="#b39b72" strokeWidth={3} dot={false} />
+            <Line type="monotone" dataKey="benchmark" name="Benchmark compost" stroke="#b39b72" strokeWidth={3} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       <SimpleTable
-        headers={["Mètrica", "Cartera recomanada", "Benchmark global"]}
+        headers={["Mètrica", "Cartera recomanada", "Benchmark compost"]}
         rows={[
           ["Rendibilitat anualitzada", formatPct(backtest.metrics.rendibilitatAnualitzada), formatPct(backtest.benchmarkMetrics.rendibilitatAnualitzada)],
           ["Volatilitat estimada", formatPct(backtest.metrics.volatilitat), formatPct(backtest.benchmarkMetrics.volatilitat)],
@@ -917,7 +1066,7 @@ function DefenseBox() {
 function LegalNotice() {
   return (
     <div style={{ border: `1px solid ${COLORS.border}`, background: "#fff8e8", padding: 14, color: COLORS.textMedium, fontSize: 13, lineHeight: 1.7 }}>
-      <strong>Avís legal i educatiu:</strong> Aquesta recomanació té finalitat educativa i no constitueix assessorament financer personalitzat regulat.
+      <strong>Avís legal i educatiu:</strong> Aquesta proposta té finalitat acadèmica i educativa. No constitueix assessorament financer personalitzat regulat ni recomanació d’inversió real.
     </div>
   );
 }
