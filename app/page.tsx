@@ -410,8 +410,8 @@ export default function Home() {
     : [];
 
   return (
-    <main style={{ minHeight: "100vh", background: COLORS.bg, padding: "32px 20px", color: COLORS.textDark }}>
-      <div style={{ maxWidth: 1380, margin: "0 auto" }}>
+    <main className="px-3 py-4 sm:px-5 sm:py-6 md:px-7 md:py-8" style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.textDark }}>
+      <div className="mx-auto w-full max-w-[1380px]">
         <Header />
 
         <Panel title="1. Test avançat de perfil inversor">
@@ -558,7 +558,7 @@ export default function Home() {
 
         {resultat && (
           <>
-            <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18, marginTop: 24 }}>
+            <section className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               <SummaryCard title="Perfil final" value={resultat.perfilFinal} note={`Score ${resultat.scoreFinal}/100`} color={perfilColor(resultat.perfilFinal)} />
               <SummaryCard title="Capacitat" value={`${resultat.scoreCapacitat}/100`} note="Risc assumible objectiu" color={COLORS.green} />
               <SummaryCard title="Tolerància" value={`${resultat.scoreTolerancia}/100`} note="Reacció davant volatilitat" color={COLORS.gold} />
@@ -566,9 +566,9 @@ export default function Home() {
               <SummaryCard title="Coneixement" value={`${resultat.scoreConeixement}/100`} note="Experiència inversora" color={COLORS.danger} />
             </section>
 
-            <section style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.8fr) minmax(0, 1.2fr)", gap: 24, marginTop: 24 }}>
+            <section className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
               <Panel title="2. Asset allocation proposada">
-                <div style={{ height: 320 }}>
+                <div style={{ height: "clamp(220px, 50vw, 320px)" }}>
                   <ResponsiveContainer>
                     <PieChart>
                       <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={105} innerRadius={55} label>
@@ -620,7 +620,7 @@ export default function Home() {
               </Panel>
             </section>
 
-            <section style={{ marginTop: 24 }}>
+            <section className="mt-5">
               <Panel title="4. Informe financer personalitzat">
                 <Informe result={resultat} />
               </Panel>
@@ -785,7 +785,7 @@ function MonteCarloBlock({ mc }: { mc: ReturnType<typeof simulacioMonteCarlo> })
         La simulació Monte Carlo permet estimar diferents trajectòries possibles d’una cartera incorporant rendibilitat esperada i volatilitat.
         No prediu el futur, però ajuda a visualitzar el risc i la incertesa.
       </p>
-      <div style={{ height: 300 }}>
+      <div style={{ height: "clamp(220px, 52vw, 320px)" }}>
         <ResponsiveContainer>
           <LineChart data={mc.trajectoria}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -894,7 +894,7 @@ function ProfessionalCharts({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
         <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
           <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Pes per producte</h4>
-          <div style={{ height: 260 }}>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
             <ResponsiveContainer>
               <BarChart data={productes}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -909,7 +909,7 @@ function ProfessionalCharts({
 
         <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
           <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Asset allocation (per bloc d’actiu)</h4>
-          <div style={{ height: 260 }}>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
             <ResponsiveContainer>
               <PieChart>
                 <Pie data={blocData} dataKey="pes" nameKey="bloc" innerRadius={45} outerRadius={90} label />
@@ -924,7 +924,7 @@ function ProfessionalCharts({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
         <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
           <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Comparació cartera vs benchmark</h4>
-          <div style={{ height: 260 }}>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
             <ResponsiveContainer>
               <BarChart data={comparacio}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -941,7 +941,7 @@ function ProfessionalCharts({
 
         <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
           <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Risc vs rendibilitat (productes)</h4>
-          <div style={{ height: 260 }}>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
             <ResponsiveContainer>
               <ScatterChart>
                 <CartesianGrid />
@@ -957,7 +957,7 @@ function ProfessionalCharts({
 
       <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
         <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Rendiment històric simulat (cartera vs benchmark)</h4>
-        <div style={{ height: 290 }}>
+        <div style={{ height: "clamp(230px, 50vw, 310px)" }}>
           <ResponsiveContainer>
             <LineChart data={backtest.data}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -974,7 +974,7 @@ function ProfessionalCharts({
 
       <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
         <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Drawdown (caiguda des de màxim)</h4>
-        <div style={{ height: 260 }}>
+        <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
           <ResponsiveContainer>
             <AreaChart data={drawdowns}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -1025,7 +1025,7 @@ function BacktestBlock({ backtest }: { backtest: ReturnType<typeof generarBackte
         La simulació no utilitza dades reals de mercat descarregades automàticament, sinó una aproximació acadèmica basada en paràmetres esperats de rendibilitat, volatilitat i drawdown per perfil. Serveix per il·lustrar el comportament esperat de la cartera, però no constitueix una predicció ni una recomanació d’inversió real.
       </p>
 
-      <div style={{ height: 340 }}>
+      <div style={{ height: "clamp(230px, 55vw, 340px)" }}>
         <ResponsiveContainer>
           <LineChart data={backtest.data}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -1073,16 +1073,16 @@ function LegalNotice() {
 
 function Header() {
   return (
-    <section style={{ background: COLORS.white, boxShadow: "0 5px 40px rgba(0,0,0,0.08)", border: `1px solid ${COLORS.border}`, marginBottom: 28 }}>
+    <section className="mb-4 sm:mb-6 md:mb-7" style={{ background: COLORS.white, boxShadow: "0 5px 40px rgba(0,0,0,0.08)", border: `1px solid ${COLORS.border}` }}>
       <div style={{ height: 4, background: `linear-gradient(90deg, ${COLORS.primaryDark}, ${COLORS.gold})` }} />
-      <div style={{ padding: "44px 48px 32px 48px" }}>
-        <div style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 24, letterSpacing: 2, color: COLORS.primaryDark, textTransform: "uppercase", marginBottom: 28 }}>
+      <div className="px-4 py-5 sm:px-6 sm:py-7 md:px-10 md:py-9">
+        <div style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 24, letterSpacing: 2, color: COLORS.primaryDark, textTransform: "uppercase", marginBottom: 28 }} className="text-base sm:text-lg md:text-2xl">
           <strong>FACTOR</strong> OTC
         </div>
-        <h1 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 34, fontWeight: 500, color: COLORS.primaryDark, margin: 0 }}>
+        <h1 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 34, fontWeight: 500, color: COLORS.primaryDark, margin: 0 }} className="text-2xl sm:text-3xl md:text-[34px]">
           ROBOADVISOR FINANCER INTEL·LIGENT
         </h1>
-        <p style={{ marginTop: 18, marginBottom: 0, maxWidth: 980, color: COLORS.textMedium, fontSize: 14, lineHeight: 1.8 }}>
+        <p style={{ marginTop: 18, marginBottom: 0, maxWidth: 980, color: COLORS.textMedium, fontSize: 14, lineHeight: 1.8 }} className="text-sm leading-7">
           Sistema acadèmic de perfilació inversora, scoring, suitability i proposta de cartera model basada en asset allocation, diversificació i criteris de selecció d’ETFs.
         </p>
       </div>
@@ -1092,9 +1092,9 @@ function Header() {
 
 function FormBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div style={{ border: `1px solid ${COLORS.border}`, padding: 18, background: "#fafcfb" }}>
+    <div className="p-3 sm:p-4 md:p-[18px]" style={{ border: `1px solid ${COLORS.border}`, background: "#fafcfb" }}>
       <h3 style={{ margin: "0 0 16px 0", color: COLORS.primaryDark, fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 20 }}>{title}</h3>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>{children}</div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div>
     </div>
   );
 }
@@ -1136,7 +1136,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section style={{ background: COLORS.white, border: `1px solid ${COLORS.border}`, boxShadow: "0 5px 30px rgba(0,0,0,0.05)", padding: 22 }}>
+    <section className="p-3 sm:p-4 md:p-5 lg:p-[22px]" style={{ background: COLORS.white, border: `1px solid ${COLORS.border}`, boxShadow: "0 5px 30px rgba(0,0,0,0.05)" }}>
       <div style={{ marginBottom: 18, paddingBottom: 12, borderBottom: `1px solid ${COLORS.border}` }}>
         <h2 style={{ margin: 0, fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 18, fontWeight: 500, color: COLORS.primaryDark }}>{title}</h2>
       </div>
@@ -1147,7 +1147,7 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 function SummaryCard({ title, value, note, color }: { title: string; value: string; note: string; color: string }) {
   return (
-    <div style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, padding: "22px 18px", position: "relative" }}>
+    <div className="p-4 sm:p-5" style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, position: "relative" }}>
       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: color }} />
       <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: COLORS.textLight, marginBottom: 8, fontWeight: 600 }}>{title}</div>
       <div style={{ fontSize: 26, lineHeight: 1.1, fontWeight: 400, color: COLORS.primaryDark, marginBottom: 6 }}>{value}</div>
@@ -1167,8 +1167,8 @@ function MiniMetric({ title, value }: { title: string; value: string }) {
 
 function SimpleTable({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>
+    <div className="overflow-x-auto rounded-md" style={{ WebkitOverflowScrolling: "touch" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
         <thead style={{ background: COLORS.primaryLight }}>
           <tr>{headers.map((h) => <Th key={h}>{h}</Th>)}</tr>
         </thead>
@@ -1184,7 +1184,7 @@ function SimpleTable({ headers, rows }: { headers: string[]; rows: ReactNode[][]
 
 function Th({ children }: { children: ReactNode }) {
   return (
-    <th style={{ padding: "12px 14px", textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: COLORS.primaryDark, borderBottom: `1px solid ${COLORS.border}` }}>
+    <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: COLORS.primaryDark, borderBottom: `1px solid ${COLORS.border}` }}>
       {children}
     </th>
   );
@@ -1192,7 +1192,7 @@ function Th({ children }: { children: ReactNode }) {
 
 function Td({ children }: { children: ReactNode }) {
   return (
-    <td style={{ padding: "12px 14px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.textMedium, fontSize: 13, lineHeight: 1.6, verticalAlign: "top" }}>
+    <td style={{ padding: "10px 12px", borderBottom: `1px solid ${COLORS.border}`, color: COLORS.textMedium, fontSize: 12.5, lineHeight: 1.55, verticalAlign: "top" }}>
       {children}
     </td>
   );
@@ -1239,21 +1239,25 @@ function ProfessionalBox({ title, text }: { title: string; text: string }) {
 
 const inputStyle = {
   width: "100%",
-  padding: "10px 12px",
+  padding: "12px 14px",
   border: `1px solid ${COLORS.border}`,
   background: COLORS.white,
   color: COLORS.textDark,
-  fontSize: 14,
+  fontSize: 16,
+  minHeight: 46,
+  borderRadius: 8,
 };
 
 const buttonStyle = {
   background: COLORS.primaryDark,
   color: "white",
   border: "none",
-  padding: "12px 18px",
+  padding: "13px 18px",
   cursor: "pointer",
   fontWeight: 700,
   fontSize: 14,
+  borderRadius: 8,
+  minHeight: 46,
 };
 
 const serifTitle = {
