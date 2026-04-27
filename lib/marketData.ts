@@ -1,5 +1,8 @@
 export type PricePoint = { date: string; close: number };
 export type QuoteData = { ticker: string; series: PricePoint[]; lastPrice: number | null; lastUpdate: string | null; provider: string };
+export type QuoteResult =
+  | { ok: true; data: QuoteData; warnings: string[] }
+  | { ok: false; ticker: string; errors: string[]; missingKeys: string[] };
 
 type CacheValue = { expiry: number; value: QuoteData };
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -97,4 +100,19 @@ export async function getDailySeries(ticker: string, days = 756, preferredProvid
     }
   }
   throw new Error(`No data provider available for ${ticker}. Errors: ${errors.join(" | ")}`);
+}
+
+export async function getDailySeriesSafe(ticker: string, days = 756, preferredProvider?: "yahoo" | "fmp" | "alpha-vantage"): Promise<QuoteResult> {
+  const errors: string[] = [];
+  const missingKeys: string[] = [];
+  try {
+    const data = await getDailySeries(ticker, days, preferredProvider);
+    return { ok: true, data, warnings: [] };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    errors.push(message);
+    if (message.includes("FMP_API_KEY")) missingKeys.push("FMP_API_KEY");
+    if (message.includes("ALPHA_VANTAGE_API_KEY")) missingKeys.push("ALPHA_VANTAGE_API_KEY");
+    return { ok: false, ticker, errors, missingKeys };
+  }
 }

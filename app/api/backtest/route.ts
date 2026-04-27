@@ -15,7 +15,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ status: "ok", ...data });
   } catch (error) {
     return NextResponse.json(
-      { status: "error", message: error instanceof Error ? error.message : "Error en càlcul de backtest" },
+      {
+        status: "error",
+        message: "No s'han pogut calcular mètriques reals amb les fonts actuals. Revisa tickers i claus API.",
+        detail: error instanceof Error ? error.message : "Error en càlcul de backtest",
+      },
       { status: 502 },
     );
   }

@@ -31,6 +31,10 @@ type ClientResult = ScoringResult & {
 type BacktestApi = {
   updatedAt: string;
   dataSource: string;
+  dataStatus: "validated" | "partial" | "pending";
+  realDataSufficient: boolean;
+  warnings: string[];
+  missingApiKeys: string[];
   benchmark: { composicio: Array<{ component: string; ticker: string; pes: number; rationale: string }> };
   data: Array<{ date: string; cartera: number; benchmark: number; carteraDD: number; benchmarkDD: number }>;
   metrics: { rendibilitatAnualitzada: number; volatilitat: number; maxDrawdown: number; sharpe: number; rendimentAcumulat: number };
@@ -46,7 +50,9 @@ type PortfolioMetricsApi = {
     trajectoria: Array<{ any: number; pessimista: number; esperat: number; optimista: number }>;
     percentils: { p10: number; p50: number; p90: number };
     params: { rendibilitatAnual: number; volatilitatAnual: number };
-  };
+  } | null;
+  dataStatus?: string;
+  note?: string;
 };
 
 const COLORS = {
@@ -712,44 +718,45 @@ function Informe({
   metricsData: PortfolioMetricsApi | null;
 }) {
   const productes = productesPerPerfil(result.perfilFinal);
-  const backtest = backtestData
+  const hasRealData = Boolean(backtestData?.realDataSufficient);
+  const backtest = hasRealData && backtestData
     ? {
         data: backtestData.data.map((d, idx) => ({ any: idx === 0 ? "Inici" : d.date, cartera: d.cartera, benchmark: d.benchmark })),
         metrics: backtestData.metrics,
         benchmarkMetrics: backtestData.benchmarkMetrics,
       }
-    : generarBacktestSimulat(result.perfilFinal);
+    : { data: [], metrics: { rendibilitatAnualitzada: 0, volatilitat: 0, maxDrawdown: 0, sharpe: 0 }, benchmarkMetrics: { rendibilitatAnualitzada: 0, volatilitat: 0, maxDrawdown: 0, sharpe: 0 } };
   const benchmark = backtestData
     ? {
         composicio: backtestData.benchmark.composicio.map((c) => ({ component: c.component, pes: c.pes, r: 0, v: 0 })),
         rendibilitat: backtestData.benchmarkMetrics.rendibilitatAnualitzada,
         volatilitat: backtestData.benchmarkMetrics.volatilitat,
       }
-    : benchmarkCompost(result.perfilFinal);
+    : { composicio: [], rendibilitat: 0, volatilitat: 0 };
   const blocData = productesPerBloc(productes);
-  const riscReturn = backtestData?.riskReturn ?? riscVsRendibilitat(productes);
+  const riscReturn = backtestData?.riskReturn ?? [];
   const drawdowns = backtestData
     ? backtestData.data.map((d, idx) => ({ any: idx === 0 ? "Inici" : d.date, carteraDD: d.carteraDD, benchmarkDD: d.benchmarkDD }))
-    : drawdownSeries(backtest);
-  const monteCarlo = metricsData
+    : [];
+  const monteCarlo = metricsData?.monteCarlo
     ? {
-        trajectoria: metricsData.monteCarlo.trajectoria,
+        trajectoria: metricsData.monteCarlo!.trajectoria,
         probAssolir:
           Number(result.row.importObjectiu || 0) > 0
             ? Math.round(
                 Math.max(
                   0,
-                  Math.min(100, (metricsData.monteCarlo.percentils.p50 / Number(result.row.importObjectiu || 1)) * 100),
+                  Math.min(100, (metricsData.monteCarlo!.percentils.p50 / Number(result.row.importObjectiu || 1)) * 100),
                 ),
               )
             : 0,
-        valorFinalEsperat: metricsData.monteCarlo.percentils.p50,
-        rang: { min: metricsData.monteCarlo.percentils.p10, max: metricsData.monteCarlo.percentils.p90 },
-        anys: metricsData.monteCarlo.trajectoria.length - 1,
+        valorFinalEsperat: metricsData.monteCarlo!.percentils.p50,
+        rang: { min: metricsData.monteCarlo!.percentils.p10, max: metricsData.monteCarlo!.percentils.p90 },
+        anys: metricsData.monteCarlo!.trajectoria.length - 1,
       }
-    : simulacioMonteCarlo(result);
-  const compClasse = comparacioClasseActiu(result.cartera, benchmark);
-  const taulaComparacio = metriquesComparatives(backtest, benchmark);
+    : null;
+  const compClasse = benchmark.composicio.length ? comparacioClasseActiu(result.cartera, benchmark) : [];
+  const taulaComparacio = hasRealData ? metriquesComparatives(backtest, benchmark) : [["Estat de dades", "Dades pendents de connexió", "No disponible"]];
   const bulletsPerfil = notesPerfil(result.perfilFinal);
   const costos = analisiCostos(productes);
   const dades = backtestData
@@ -758,7 +765,7 @@ function Informe({
         actualitzacio: new Date(backtestData.updatedAt).toLocaleString("ca-ES"),
         nota: `${backtestData.availability.limitacions} Rendiments passats no garanteixen rendiments futurs.`,
       }
-    : estatDadesMercat();
+    : { font: "Dades pendents de connexió", actualitzacio: "-", nota: "Encara no hi ha prou dades reals per generar mètriques robustes." };
   const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id));
 
   return (
@@ -785,16 +792,18 @@ function Informe({
         <div>
           <h3 style={sectionTitle}>Productes de cartera (4-8)</h3>
           <SimpleTable
-            headers={["Classe d’actiu", "Producte", "ISIN", "Tipus", "Gestió", "Pes", "TER", "Cost ponderat", "Rol", "Benchmark referència", "Funció"]}
+            headers={["Classe d’actiu", "Producte", "ISIN", "Ticker", "Tipus", "Gestió", "Pes", "TER", "Cost ponderat", "Estat dades", "Rol", "Benchmark referència", "Funció"]}
             rows={costos.files.map((p) => [
               p.blocActiu,
               p.nom,
               p.isin,
+              p.tickerYahoo || p.tickerFMP || "pendent",
               p.tipus,
               p.gestio,
               `${p.percentatge}%`,
               p.ter !== null ? `${p.ter.toFixed(2)}%` : "TER estimat pendent de validació",
               p.costPonderat !== null ? `${p.costPonderat.toFixed(3)}%` : "-",
+              <DataStatusBadge key={`${p.id}-status`} status={p.dataStatus} />,
               p.rol,
               p.benchmarkRef,
               p.dataAvailable ? p.justificacio : `${p.justificacio} (només informatiu, pendent de validació de dades)`,
@@ -814,13 +823,15 @@ function Informe({
 
       <Panel title="Costos estimats de la cartera">
         <SimpleTable
-          headers={["Producte", "ISIN", "Pes", "TER anual", "Cost ponderat", "Gestió", "Comentari"]}
+          headers={["Producte", "ISIN", "Ticker", "Pes", "TER anual", "Cost ponderat", "Estat", "Gestió", "Comentari"]}
           rows={costos.files.map((p) => [
             p.nom,
             p.isin,
+            p.tickerYahoo || p.tickerFMP || "pendent",
             `${p.percentatge}%`,
             p.ter !== null ? `${p.ter.toFixed(2)}%` : "TER estimat pendent de validació",
             p.costPonderat !== null ? `${p.costPonderat.toFixed(3)}%` : "-",
+            <DataStatusBadge key={`${p.id}-cost-status`} status={p.dataStatus} />,
             p.gestio,
             "El cost ponderat es calcula com pes × TER anual.",
           ])}
@@ -857,16 +868,20 @@ function Informe({
       </Panel>
 
       <Panel title="Visualització professional de la cartera">
-        <ProfessionalCharts
-          blocData={blocData}
-          productes={productes}
-          backtest={backtest}
-          riscReturn={riscReturn}
-          drawdowns={drawdowns}
-          benchmark={benchmark}
-          correlations={backtestData?.correlations ?? []}
-          riskContribution={backtestData?.riskContribution ?? []}
-        />
+        {hasRealData ? (
+          <ProfessionalCharts
+            blocData={blocData}
+            productes={productes}
+            backtest={backtest}
+            riscReturn={riscReturn}
+            drawdowns={drawdowns}
+            benchmark={benchmark}
+            correlations={backtestData?.correlations ?? []}
+            riskContribution={backtestData?.riskContribution ?? []}
+          />
+        ) : (
+          <div style={highlightBox}>Dades pendents de connexió. Els gràfics quantitatius (backtest, drawdown, correlacions) es mostraran quan hi hagi historial real suficient.</div>
+        )}
       </Panel>
 
       <Panel title="Univers complementari">
@@ -875,9 +890,15 @@ function Informe({
       </Panel>
 
       <Panel title="Simulacions (backtest + Monte Carlo)">
-        <BacktestBlock backtest={backtest} />
-        <div style={{ height: 12 }} />
-        <MonteCarloBlock mc={monteCarlo} />
+        {hasRealData ? (
+          <>
+            <BacktestBlock backtest={backtest} />
+            <div style={{ height: 12 }} />
+            {monteCarlo ? <MonteCarloBlock mc={monteCarlo} /> : <div style={highlightBox}>Monte Carlo pendent: no hi ha suficient historial per estimar distribucions robustes.</div>}
+          </>
+        ) : (
+          <div style={highlightBox}>Backtest/Drawdown/Monte Carlo no disponibles: dades reals pendents de connexió.</div>
+        )}
       </Panel>
 
       <Panel title="Fiabilitat de dades i actualització">
@@ -892,6 +913,12 @@ function Informe({
               <br />
               <strong>Productes pendents de validació:</strong> {backtestData.availability.pendents.join(", ") || "Cap"}.
               <br />
+              {backtestData.missingApiKeys.length > 0 && (
+                <>
+                  <strong>Claus API pendents:</strong> {backtestData.missingApiKeys.join(", ")}. Sense aquestes claus, la cobertura de dades pot ser parcial.
+                  <br />
+                </>
+              )}
               <strong>Avís:</strong> eina de suport a la decisió i simulació educativa/professional; no constitueix recomanació d’inversió personalitzada regulada.
             </>
           )}
@@ -919,39 +946,40 @@ function Informe({
 
 function PdfReportDocument({ result, backtestData, metricsData }: { result: ClientResult; backtestData: BacktestApi | null; metricsData: PortfolioMetricsApi | null }) {
   const productes = productesPerPerfil(result.perfilFinal);
+  const hasRealData = Boolean(backtestData?.realDataSufficient);
   const benchmark = backtestData
     ? {
         composicio: backtestData.benchmark.composicio.map((c) => ({ component: c.component, pes: c.pes, r: 0, v: 0 })),
         rendibilitat: backtestData.benchmarkMetrics.rendibilitatAnualitzada,
         volatilitat: backtestData.benchmarkMetrics.volatilitat,
       }
-    : benchmarkCompost(result.perfilFinal);
-  const backtest = backtestData
+    : { composicio: [], rendibilitat: 0, volatilitat: 0 };
+  const backtest = hasRealData && backtestData
     ? {
         data: backtestData.data.map((d, idx) => ({ any: idx === 0 ? "Inici" : d.date, cartera: d.cartera, benchmark: d.benchmark })),
         metrics: backtestData.metrics,
         benchmarkMetrics: backtestData.benchmarkMetrics,
       }
-    : generarBacktestSimulat(result.perfilFinal);
-  const compClasse = comparacioClasseActiu(result.cartera, benchmark);
-  const taulaComparacio = metriquesComparatives(backtest, benchmark);
-  const mc = metricsData
+    : { data: [], metrics: { rendibilitatAnualitzada: 0, volatilitat: 0, maxDrawdown: 0, sharpe: 0 }, benchmarkMetrics: { rendibilitatAnualitzada: 0, volatilitat: 0, maxDrawdown: 0, sharpe: 0 } };
+  const compClasse = benchmark.composicio.length ? comparacioClasseActiu(result.cartera, benchmark) : [];
+  const taulaComparacio = hasRealData ? metriquesComparatives(backtest, benchmark) : [["Estat", "Dades pendents de connexió", "-"]];
+  const mc = metricsData?.monteCarlo
     ? {
-        trajectoria: metricsData.monteCarlo.trajectoria,
+        trajectoria: metricsData.monteCarlo!.trajectoria,
         probAssolir:
           Number(result.row.importObjectiu || 0) > 0
             ? Math.round(
                 Math.max(
                   0,
-                  Math.min(100, (metricsData.monteCarlo.percentils.p50 / Number(result.row.importObjectiu || 1)) * 100),
+                  Math.min(100, (metricsData.monteCarlo!.percentils.p50 / Number(result.row.importObjectiu || 1)) * 100),
                 ),
               )
             : 0,
-        valorFinalEsperat: metricsData.monteCarlo.percentils.p50,
-        rang: { min: metricsData.monteCarlo.percentils.p10, max: metricsData.monteCarlo.percentils.p90 },
-        anys: metricsData.monteCarlo.trajectoria.length - 1,
+        valorFinalEsperat: metricsData.monteCarlo!.percentils.p50,
+        rang: { min: metricsData.monteCarlo!.percentils.p10, max: metricsData.monteCarlo!.percentils.p90 },
+        anys: metricsData.monteCarlo!.trajectoria.length - 1,
       }
-    : simulacioMonteCarlo(result);
+    : null;
   const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id)).slice(0, 5);
 
   return (
@@ -984,7 +1012,7 @@ function PdfReportDocument({ result, backtestData, metricsData }: { result: Clie
         <p style={{ margin: "0 0 8px", fontSize: 13, lineHeight: 1.6 }}>
           El benchmark compost és la referència utilitzada per comparar la cartera. No és un únic índex, sinó una combinació ponderada coherent amb el perfil inversor.
         </p>
-        <SimpleTable headers={["Índex", "Pes", "Retorn esperat", "Volatilitat"]} rows={benchmark.composicio.map((c) => [c.component, `${c.pes}%`, formatPct(c.r), formatPct(c.v)])} />
+        <SimpleTable headers={["Índex", "Ticker", "Pes", "Per què s'utilitza"]} rows={benchmark.composicio.map((c: { component: string; pes: number; ticker?: string; rationale?: string }) => [c.component, c.ticker || "-", `${c.pes}%`, c.rationale || "-"])} />
       </section>
 
       <section style={{ marginBottom: 16 }}>
@@ -996,15 +1024,19 @@ function PdfReportDocument({ result, backtestData, metricsData }: { result: Clie
 
       <section style={{ marginBottom: 16 }}>
         <h2 style={{ color: "#0c2d2a", margin: "0 0 8px", fontSize: 18 }}>Simulació Monte Carlo</h2>
-        <SimpleTable
-          headers={["Mètrica", "Valor"]}
-          rows={[
-            ["Escenari pessimista", formatEuro(mc.rang.min)],
-            ["Escenari esperat", formatEuro(mc.valorFinalEsperat)],
-            ["Escenari optimista", formatEuro(mc.rang.max)],
-            ["Probabilitat estimada d’assolir objectiu", `${mc.probAssolir}%`],
-          ]}
-        />
+        {mc ? (
+          <SimpleTable
+            headers={["Mètrica", "Valor"]}
+            rows={[
+              ["Percentil P10", formatEuro(mc.rang.min)],
+              ["Percentil P50", formatEuro(mc.valorFinalEsperat)],
+              ["Percentil P90", formatEuro(mc.rang.max)],
+              ["Probabilitat estimada d’assolir objectiu", `${mc.probAssolir}%`],
+            ]}
+          />
+        ) : (
+          <p style={{ fontSize: 13, color: "#555" }}>Dades pendents de connexió: no hi ha base real suficient per executar Monte Carlo.</p>
+        )}
       </section>
 
       <section style={{ marginBottom: 16 }}>
@@ -1161,6 +1193,9 @@ function FinalConclusion({ result }: { result: ClientResult }) {
 }
 
 function BenchmarkCompostBox({ benchmark }: { benchmark: ReturnType<typeof benchmarkCompost> }) {
+  if (!benchmark.composicio.length) {
+    return <div style={highlightBox}>Benchmark compost pendent: dades de mercat encara no validades per al perfil seleccionat.</div>;
+  }
   return (
     <div style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, padding: 18 }}>
       <h3 style={sectionTitle}>Benchmark compost per perfil</h3>
@@ -1601,6 +1636,16 @@ function RiskBadge({ risc }: { risc: string }) {
       {risc}
     </span>
   );
+}
+
+function DataStatusBadge({ status }: { status: "validated" | "pending" | "no_data" }) {
+  const palette =
+    status === "validated"
+      ? { bg: "#e8f6ef", color: "#1d6b45", text: "validat" }
+      : status === "pending"
+      ? { bg: "#fff5e6", color: "#9a5b00", text: "pendent" }
+      : { bg: "#fdecec", color: "#8f2a2a", text: "sense dades" };
+  return <span style={{ background: palette.bg, color: palette.color, padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 700 }}>{palette.text}</span>;
 }
 
 function Alert({ text }: { text: string }) {

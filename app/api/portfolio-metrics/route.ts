@@ -16,6 +16,18 @@ export async function GET(request: NextRequest) {
 
   try {
     const backtest = await buildBacktest(perfil);
+    if (!backtest.realDataSufficient || backtest.data.length < 30) {
+      return NextResponse.json({
+        status: "ok",
+        updatedAt: backtest.updatedAt,
+        dataStatus: "pending",
+        note: "Dades pendents de connexió: no hi ha prou historial real per calcular Monte Carlo i mètriques avançades.",
+        monteCarlo: null,
+        riskReturn: [],
+        correlations: [],
+        riskContribution: [],
+      });
+    }
     const returns = backtest.data.slice(1).map((row, idx) => row.cartera / backtest.data[idx].cartera - 1);
     const mc = simulateMonteCarloFromReturns({
       returns,
@@ -28,6 +40,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       status: "ok",
       updatedAt: backtest.updatedAt,
+      dataStatus: backtest.dataStatus,
       monteCarlo: {
         trajectoria: mc.trajectoria,
         percentils: { p10: Math.round(mc.p10), p50: Math.round(mc.p50), p90: Math.round(mc.p90) },
@@ -39,7 +52,11 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     return NextResponse.json(
-      { status: "error", message: error instanceof Error ? error.message : "Error en mètriques de cartera" },
+      {
+        status: "error",
+        message: "No s'han pogut generar mètriques avançades amb les dades disponibles.",
+        detail: error instanceof Error ? error.message : "Error en mètriques de cartera",
+      },
       { status: 502 },
     );
   }
