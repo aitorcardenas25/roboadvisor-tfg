@@ -43,6 +43,7 @@ type ProducteCartera = {
   rol: string;
   blocActiu: string;
   benchmarkRef: string;
+  terAnual?: number | null;
   percentatge: number;
   criteri: string;
   justificacio: string;
@@ -125,31 +126,32 @@ type UniverseProduct = {
   perfils: Perfil[];
   rol: "Core" | "Satellite" | "Thematic/high risk" | "Income/dividend" | "Defensive/liquidity";
   blocActiu: "Renda variable" | "Renda fixa" | "Liquiditat" | "Alternatius";
+  terAnual?: number | null;
 };
 
 const PRODUCT_UNIVERSE: UniverseProduct[] = [
-  { id: "world-core", nom: "Fons indexat global ACWI", isin: "pendent de validació", tickerOrientatiu: "Global ACWI Fund", categoria: "Global Equity", tipus: "Fons indexat", gestio: "Indexada", risc: "Mitjà", perfils: ["Conservador", "Moderat", "Dinàmic", "Agressiu"], rol: "Core", blocActiu: "Renda variable" },
-  { id: "aggh", nom: "Fons indexat renda fixa global coberta EUR", isin: "IE00BDBRDM35", tickerOrientatiu: "AGGH-like fund", categoria: "Global Bonds", tipus: "Fons indexat", gestio: "Indexada", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Renda fixa" },
-  { id: "ibgs", nom: "Fons indexat bons governamentals EUR curt termini", isin: "IE00B3VTMJ91", tickerOrientatiu: "Euro Gov 1-3Y fund", categoria: "Government Bonds", tipus: "Fons indexat", gestio: "Indexada", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa" },
-  { id: "cash", nom: "Fons monetari EUR", isin: "N/D", tickerOrientatiu: "Monetari EUR", categoria: "Liquidity", tipus: "Fons monetari", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Liquiditat" },
+  { id: "world-core", nom: "Fons indexat global ACWI", isin: "pendent de validació", tickerOrientatiu: "Global ACWI Fund", categoria: "Global Equity", tipus: "Fons indexat", gestio: "Indexada", risc: "Mitjà", perfils: ["Conservador", "Moderat", "Dinàmic", "Agressiu"], rol: "Core", blocActiu: "Renda variable", terAnual: 0.2 },
+  { id: "aggh", nom: "Fons indexat renda fixa global coberta EUR", isin: "IE00BDBRDM35", tickerOrientatiu: "AGGH-like fund", categoria: "Global Bonds", tipus: "Fons indexat", gestio: "Indexada", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Renda fixa", terAnual: 0.14 },
+  { id: "ibgs", nom: "Fons indexat bons governamentals EUR curt termini", isin: "IE00B3VTMJ91", tickerOrientatiu: "Euro Gov 1-3Y fund", categoria: "Government Bonds", tipus: "Fons indexat", gestio: "Indexada", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa", terAnual: 0.1 },
+  { id: "cash", nom: "Fons monetari EUR", isin: "N/D", tickerOrientatiu: "Monetari EUR", categoria: "Liquidity", tipus: "Fons monetari", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Liquiditat", terAnual: 0.08 },
   { id: "reits", nom: "ETF REIT global", isin: "N/D", tickerOrientatiu: "IWDP", categoria: "Real Estate", tipus: "ETF", risc: "Mitjà", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Alternatius" },
   { id: "small-eu", nom: "Invesco Continental European Small Cap Equity A EUR Acc", isin: "LU2305834041", tickerOrientatiu: "Invesco Small Cap EU", categoria: "Europa Small Caps", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
-  { id: "small-global-vg", nom: "Vanguard Global Small-Cap Index Fund EUR Acc", isin: "IE00B42W4L06", tickerOrientatiu: "Vanguard Small Cap", categoria: "Global Small Caps", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "small-global-vg", nom: "Vanguard Global Small-Cap Index Fund EUR Acc", isin: "IE00B42W4L06", tickerOrientatiu: "Vanguard Small Cap", categoria: "Global Small Caps", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", terAnual: 0.29 },
   { id: "small-global-ish", nom: "iShares MSCI World Small Cap UCITS ETF USD Acc", isin: "N/D", tickerOrientatiu: "IUSN", categoria: "Global Small Caps", tipus: "ETF", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
-  { id: "em-vg", nom: "Vanguard Emerging Markets Stock Index Fund EUR", isin: "IE0031786696", tickerOrientatiu: "Vanguard EM", categoria: "Mercats emergents", tipus: "Fons indexat", risc: "Alt", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "em-vg", nom: "Vanguard Emerging Markets Stock Index Fund EUR", isin: "IE0031786696", tickerOrientatiu: "Vanguard EM", categoria: "Mercats emergents", tipus: "Fons indexat", risc: "Alt", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", terAnual: 0.22 },
   { id: "asia-active", nom: "Federated Hermes Asia ex-Japan Equity Fund Class F Acc", isin: "IE00B8H6X308", tickerOrientatiu: "Hermes Asia ex-Japan", categoria: "Àsia ex-Japó", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
-  { id: "nasdaq-my", nom: "MyInvestor Nasdaq-100", isin: "N/D", tickerOrientatiu: "Nasdaq-100", categoria: "NASDAQ 100", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
+  { id: "nasdaq-my", nom: "MyInvestor Nasdaq-100", isin: "N/D", tickerOrientatiu: "Nasdaq-100", categoria: "NASDAQ 100", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", terAnual: 0.3 },
   { id: "qqq", nom: "Invesco QQQ Trust Series 1 ETF", isin: "US46090E1038", tickerOrientatiu: "QQQ", categoria: "NASDAQ 100", tipus: "ETF", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
-  { id: "ai-polar", nom: "Polar Capital Artificial Intelligence Fund I Acc", isin: "IE00BF0GL329", tickerOrientatiu: "Polar AI", categoria: "Tecnologia i IA", tipus: "Fons", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "ai-polar", nom: "Polar Capital Artificial Intelligence Fund I Acc", isin: "IE00BF0GL329", tickerOrientatiu: "Polar AI", categoria: "Tecnologia i IA", tipus: "Fons", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", terAnual: 1.15 },
   { id: "tech-polar", nom: "Polar Capital Global Technology Fund R", isin: "IE00BM95B621", tickerOrientatiu: "Polar Tech", categoria: "Tecnologia global", tipus: "Fons", risc: "Molt alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
   { id: "tech-fidelity", nom: "Fidelity Funds Global Technology Fund A-Acc-EUR Hedged", isin: "LU1841614867", tickerOrientatiu: "Fidelity Tech Hedged", categoria: "Tecnologia global", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
   { id: "biotech", nom: "Polar Capital Biotech R Inc", isin: "IE00B3VXGD32", tickerOrientatiu: "Polar Biotech", categoria: "Innovació sanitària", tipus: "Fons", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
-  { id: "energy-bgf", nom: "BlackRock Global Funds World Energy Fund D2 EUR", isin: "LU0252963896", tickerOrientatiu: "BGF World Energy", categoria: "Energia", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
+  { id: "energy-bgf", nom: "BlackRock Global Funds World Energy Fund D2 EUR", isin: "LU0252963896", tickerOrientatiu: "BGF World Energy", categoria: "Energia", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", terAnual: 1.02 },
   { id: "energy-vg", nom: "Vanguard Energy Fund Investor Shares", isin: "US9219081091", tickerOrientatiu: "VGENX", categoria: "Energia", tipus: "Fons", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
   { id: "gold-miners", nom: "DWS Invest Gold and Precious Metals Equities LC", isin: "LU0273159177", tickerOrientatiu: "DWS Gold Miners", categoria: "Mineres / Or", tipus: "Fons", risc: "Molt alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Alternatius" },
   { id: "china-index", nom: "Pictet China Index P EUR", isin: "LU0625737910", tickerOrientatiu: "Pictet China", categoria: "Xina", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable" },
-  { id: "div-jpm", nom: "JPMorgan Investment Funds Global Dividend Fund A div EUR", isin: "LU0714179727", tickerOrientatiu: "JPM Global Dividend", categoria: "Dividends", tipus: "Fons", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable" },
-  { id: "div-vg", nom: "Vanguard Global Equity Income Fund", isin: "N/D", tickerOrientatiu: "Vanguard Equity Income", categoria: "Dividends", tipus: "Fons", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable" },
+  { id: "div-jpm", nom: "JPMorgan Investment Funds Global Dividend Fund A div EUR", isin: "LU0714179727", tickerOrientatiu: "JPM Global Dividend", categoria: "Dividends", tipus: "Fons", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable", terAnual: 0.95 },
+  { id: "div-vg", nom: "Vanguard Global Equity Income Fund", isin: "N/D", tickerOrientatiu: "Vanguard Equity Income", categoria: "Dividends", tipus: "Fons", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable", terAnual: 0.32 },
   { id: "oil-gas-ish", nom: "iShares Oil & Gas Exploration & Production", isin: "N/D", tickerOrientatiu: "iShares Oil&Gas", categoria: "Energia", tipus: "ETF", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
   { id: "robotics", nom: "Global X Robotics & Artificial Intelligence ETF", isin: "N/D", tickerOrientatiu: "BOTZ", categoria: "Tecnologia i IA", tipus: "ETF", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable" },
 ];
@@ -236,6 +238,7 @@ function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
         rol: producte.rol,
         blocActiu: producte.blocActiu,
         benchmarkRef: benchmarkPerCategoria(producte.categoria),
+        terAnual: producte.terAnual ?? null,
         percentatge: pick.percentatge,
         criteri: pick.criteri,
         justificacio: pick.justificacio,
@@ -262,7 +265,7 @@ function generarBacktestSimulat(perfil: Perfil) {
       ? { r: 0.068, v: 0.135, dd: -27.4, s: 0.45 }
       : { r: 0.079, v: 0.18, dd: -36.2, s: 0.42 };
 
-  const shocks = [-0.04, 0.06, 0.02, -0.08, 0.11, 0.04, -0.12, 0.15, 0.07, -0.05, 0.09];
+  const shocks = [-0.03, 0.05, 0.01, -0.07, 0.09, 0.03, -0.16, 0.14, -0.17, 0.08, 0.07];
   const years = ["2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"];
 
   let cartera = 10000;
@@ -392,6 +395,31 @@ function notesPerfil(perfil: Perfil) {
     "Renda fixa i liquiditat mínimes.",
     "Risc principal: caigudes temporals intenses i elevada dispersió de resultats.",
   ];
+}
+
+function analisiCostos(productes: ProducteCartera[]) {
+  const files = productes.map((p) => {
+    const ter = p.terAnual ?? null;
+    const costPonderat = ter !== null ? (p.percentatge / 100) * ter : null;
+    return {
+      ...p,
+      ter,
+      costPonderat,
+    };
+  });
+  const costTotal = files.reduce((acc, f) => acc + (f.costPonderat ?? 0), 0);
+  const costActivaRef = 1.15;
+  const costIndexadaRef = 0.22;
+  return { files, costTotal, costActivaRef, costIndexadaRef };
+}
+
+function estatDadesMercat() {
+  return {
+    font: "Simulades/estimades (mode acadèmic)",
+    actualitzacio: "Manual (preparat per integració diària via API/CSV)",
+    nota:
+      "Les mètriques de rendibilitat, volatilitat, drawdown i Monte Carlo depenen de les dades de mercat utilitzades. En aquesta versió acadèmica, poden basar-se en estimacions o dades històriques importades. Per a ús professional, caldria connectar fonts de dades financeres actualitzades diàriament.",
+  };
 }
 
 function productesPerBloc(productes: ProducteCartera[]) {
@@ -800,6 +828,8 @@ function Informe({
   const compClasse = comparacioClasseActiu(result.cartera, benchmark);
   const taulaComparacio = metriquesComparatives(backtest, benchmark);
   const bulletsPerfil = notesPerfil(result.perfilFinal);
+  const costos = analisiCostos(productes);
+  const dades = estatDadesMercat();
   const alternatives = PRODUCT_UNIVERSE.filter((p) => p.perfils.includes(result.perfilFinal) && !productes.some((x) => x.id === p.id));
 
   return (
@@ -816,7 +846,7 @@ function Informe({
         </button>
       </div>
 
-      <ExecutiveSummary result={result} />
+      <ExecutiveSummary result={result} costTotal={costos.costTotal} />
 
       <Panel title="Perfil i diagnòstic">
         <MethodologyBox />
@@ -826,8 +856,20 @@ function Informe({
         <div>
           <h3 style={sectionTitle}>Productes de cartera (4-8)</h3>
           <SimpleTable
-            headers={["Classe d’actiu", "Producte", "ISIN", "Tipus", "Gestió", "Pes", "Rol", "Benchmark referència", "Funció"]}
-            rows={productes.map((p) => [p.blocActiu, p.nom, p.isin, p.tipus, p.gestio, `${p.percentatge}%`, p.rol, p.benchmarkRef, p.justificacio])}
+            headers={["Classe d’actiu", "Producte", "ISIN", "Tipus", "Gestió", "Pes", "TER", "Cost ponderat", "Rol", "Benchmark referència", "Funció"]}
+            rows={costos.files.map((p) => [
+              p.blocActiu,
+              p.nom,
+              p.isin,
+              p.tipus,
+              p.gestio,
+              `${p.percentatge}%`,
+              p.ter !== null ? `${p.ter.toFixed(2)}%` : "TER estimat pendent de validació",
+              p.costPonderat !== null ? `${p.costPonderat.toFixed(3)}%` : "-",
+              p.rol,
+              p.benchmarkRef,
+              p.justificacio,
+            ])}
           />
         </div>
         <div style={{ marginTop: 14 }}>
@@ -835,6 +877,31 @@ function Informe({
           <ul style={{ margin: 0, paddingLeft: 18, color: COLORS.textMedium, lineHeight: 1.75 }}>
             {bulletsPerfil.map((b) => <li key={b}>{b}</li>)}
           </ul>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <MiniMetric title="Cost total estimat de la cartera" value={`${costos.costTotal.toFixed(3)}% anual`} />
+        </div>
+      </Panel>
+
+      <Panel title="Costos estimats de la cartera">
+        <SimpleTable
+          headers={["Producte", "ISIN", "Pes", "TER anual", "Cost ponderat", "Gestió", "Comentari"]}
+          rows={costos.files.map((p) => [
+            p.nom,
+            p.isin,
+            `${p.percentatge}%`,
+            p.ter !== null ? `${p.ter.toFixed(2)}%` : "TER estimat pendent de validació",
+            p.costPonderat !== null ? `${p.costPonderat.toFixed(3)}%` : "-",
+            p.gestio,
+            "El cost ponderat es calcula com pes × TER anual.",
+          ])}
+        />
+        <div style={{ marginTop: 10, color: COLORS.textMedium, fontSize: 13, lineHeight: 1.7 }}>
+          <strong>Cost total ponderat:</strong> {costos.costTotal.toFixed(3)}% anual ·
+          <strong> Referència cartera activa:</strong> ~{costos.costActivaRef.toFixed(2)}% ·
+          <strong> Referència cartera indexada:</strong> ~{costos.costIndexadaRef.toFixed(2)}%.
+          <br />
+          El cost total de la cartera és important perquè redueix la rendibilitat neta esperada a llarg termini.
         </div>
       </Panel>
 
@@ -880,6 +947,14 @@ function Informe({
         <BacktestBlock backtest={backtest} />
         <div style={{ height: 12 }} />
         <MonteCarloBlock mc={monteCarlo} />
+      </Panel>
+
+      <Panel title="Fiabilitat de dades i actualització">
+        <div style={{ ...paragraph, margin: 0 }}>
+          <strong>Font actual:</strong> {dades.font}.<br />
+          <strong>Actualització:</strong> {dades.actualitzacio}.<br />
+          {dades.nota}
+        </div>
       </Panel>
 
       <ProfessionalBox
