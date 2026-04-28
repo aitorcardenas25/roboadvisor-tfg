@@ -29,7 +29,7 @@ export async function GET() {
         tickerYahoo: p.tickerYahoo || null,
         tickerFMP: p.tickerFMP || null,
         dataAvailable: false,
-        dataStatus: p.dataStatus === "pending" ? "pending" : "no_data",
+        dataStatus: p.dataStatus === "pending" ? "pending" : "unavailable",
         provider: null,
         lastPrice: null,
         lastUpdate: null,

@@ -16,6 +16,8 @@ export type UniverseProduct = {
   tickerFMP?: string;
   benchmarkTicker?: string;
   gestora?: string;
+  dataSource?: string;
+  comentariFiabilitat?: string;
   categoria: string;
   tipus: string;
   gestio?: "Activa" | "Indexada" | "Passiva";
@@ -27,7 +29,7 @@ export type UniverseProduct = {
   exchange: string;
   provider: "yahoo" | "fmp" | "alpha-vantage" | "manual";
   dataAvailable: boolean;
-  dataStatus: "validated" | "pending" | "no_data";
+  dataStatus: "validated" | "partial" | "pending" | "unavailable";
   lastPrice?: number | null;
   lastUpdate?: string | null;
   ongoingCost?: number | null;
@@ -41,6 +43,8 @@ export type ProducteCartera = {
   tickerYahoo?: string;
   tickerFMP?: string;
   gestora?: string;
+  dataSource?: string;
+  comentariFiabilitat?: string;
   categoria: string;
   tipus: string;
   gestio: "Activa" | "Indexada" | "Passiva";
@@ -54,7 +58,7 @@ export type ProducteCartera = {
   criteri: string;
   justificacio: string;
   dataAvailable: boolean;
-  dataStatus: "validated" | "pending" | "no_data";
+  dataStatus: "validated" | "partial" | "pending" | "unavailable";
   lastUpdate?: string | null;
 };
 
@@ -67,15 +71,25 @@ export const PRODUCT_UNIVERSE: UniverseProduct[] = [
   { id: "small-global-vg", nom: "Vanguard Global Small-Cap Index", isin: "IE00B42W4L06", tickerOrientatiu: "Vanguard Small Cap", tickerYahoo: "0P0000XVMX.F", tickerFMP: "VSGAX", categoria: "Global Small Caps", tipus: "Fons indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "yahoo", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.29 },
   { id: "em-vg", nom: "Vanguard Emerging Markets", isin: "IE0031786696", tickerOrientatiu: "Vanguard EM", tickerYahoo: "VFEM.L", tickerFMP: "VFEM.L", benchmarkTicker: "EEM", categoria: "Mercats emergents", tipus: "ETF indexat", risc: "Alt", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", currency: "USD", exchange: "LSE", provider: "yahoo", dataAvailable: true, dataStatus: "validated", ongoingCost: 0.22 },
   { id: "nasdaq-my", nom: "Invesco EQQQ Nasdaq-100 UCITS", isin: "IE0032077012", tickerOrientatiu: "Nasdaq-100", tickerYahoo: "EQQQ.L", tickerFMP: "EQQQ.L", benchmarkTicker: "QQQ", categoria: "NASDAQ 100", tipus: "ETF indexat", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", currency: "USD", exchange: "LSE", provider: "yahoo", dataAvailable: true, dataStatus: "validated", ongoingCost: 0.3 },
-  { id: "ai-polar", nom: "Polar Capital Artificial Intelligence", isin: "IE00BF0GL329", tickerOrientatiu: "Polar AI", categoria: "Tecnologia i IA", tipus: "Fons actiu", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "no_data", ongoingCost: 1.15 },
-  { id: "energy-bgf", nom: "BlackRock World Energy Fund", isin: "LU0252963896", tickerOrientatiu: "BGF World Energy", categoria: "Energia", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "no_data", ongoingCost: 1.02 },
-  { id: "div-jpm", nom: "JPM Global Dividend", isin: "LU0714179727", tickerOrientatiu: "JPM Global Dividend", categoria: "Dividends", tipus: "Fons actiu", risc: "Mitjà", perfils: ["Conservador", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "no_data", ongoingCost: 0.95 },
+  { id: "ai-polar", nom: "Polar Capital Artificial Intelligence", isin: "IE00BF0GL329", tickerOrientatiu: "Polar AI", categoria: "Tecnologia i IA", tipus: "Fons actiu", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "unavailable", ongoingCost: 1.15 },
+  { id: "energy-bgf", nom: "BlackRock World Energy Fund", isin: "LU0252963896", tickerOrientatiu: "BGF World Energy", categoria: "Energia", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "unavailable", ongoingCost: 1.02 },
+  { id: "div-jpm", nom: "JPM Global Dividend", isin: "LU0714179727", tickerOrientatiu: "JPM Global Dividend", categoria: "Dividends", tipus: "Fons actiu", risc: "Mitjà", perfils: ["Conservador", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "unavailable", ongoingCost: 0.95 },
   { id: "div-vg", nom: "Vanguard FTSE All-World High Dividend", isin: "IE00B8GKDB10", tickerOrientatiu: "VHYL", tickerYahoo: "VHYL.L", tickerFMP: "VHYL.L", benchmarkTicker: "VHYL.L", categoria: "Dividends", tipus: "ETF", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Income/dividend", blocActiu: "Renda variable", currency: "USD", exchange: "LSE", provider: "yahoo", dataAvailable: true, dataStatus: "validated", ongoingCost: 0.29 },
   { id: "fund-global-equity", nom: "Vanguard Global Stock Index Fund Investor EUR", isin: "IE00B03HD191", tickerOrientatiu: "Vanguard Global Stock Fund", tickerYahoo: "0P0000YENP.F", gestora: "Vanguard", categoria: "Global Equity", tipus: "Fons indexat", risc: "Mitjà", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Core", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "yahoo", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.18 },
   { id: "fund-global-bond", nom: "PIMCO GIS Global Bond Fund", isin: "IE00B11XZ103", tickerOrientatiu: "PIMCO Global Bond", gestora: "PIMCO", categoria: "Global Bonds", tipus: "Fons actiu", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.55 },
   { id: "fund-short-bond", nom: "JPM Euro Short Duration Bond Fund", isin: "LU0159052710", tickerOrientatiu: "JPM Short Duration Bond", gestora: "J.P. Morgan AM", categoria: "Government Bonds", tipus: "Fons actiu", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.45 },
   { id: "fund-emerging", nom: "Fidelity Emerging Markets Fund", isin: "LU0048575426", tickerOrientatiu: "Fidelity EM Fund", gestora: "Fidelity", categoria: "Mercats emergents", tipus: "Fons actiu", risc: "Alt", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", currency: "USD", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.95 },
-  { id: "fund-tech", nom: "BlackRock Global Funds World Technology", isin: "LU0171310443", tickerOrientatiu: "BGF World Technology", gestora: "BlackRock", categoria: "Tecnologia global", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", currency: "USD", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "no_data", ongoingCost: 1.2 },
+  { id: "fund-tech", nom: "BlackRock Global Funds World Technology", isin: "LU0171310443", tickerOrientatiu: "BGF World Technology", gestora: "BlackRock", categoria: "Tecnologia global", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", currency: "USD", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "unavailable", ongoingCost: 1.2 },
+  { id: "fund-usa", nom: "JPM US Select Equity Plus", isin: "LU0289215948", tickerOrientatiu: "JPM USA", gestora: "J.P. Morgan AM", categoria: "USA", tipus: "Fons actiu", risc: "Alt", perfils: ["Moderat", "Dinàmic", "Agressiu"], rol: "Core", blocActiu: "Renda variable", currency: "USD", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.85 },
+  { id: "fund-europe", nom: "Schroder ISF EURO Equity", isin: "LU0106235293", tickerOrientatiu: "Schroder Europe", gestora: "Schroders", categoria: "Europa", tipus: "Fons actiu", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Satellite", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.9 },
+  { id: "fund-spain", nom: "Santander Acciones Españolas", isin: "ES0119207009", tickerOrientatiu: "Santander España", gestora: "Santander AM", categoria: "Espanya", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "unavailable", ongoingCost: 1.35 },
+  { id: "fund-germany", nom: "DWS Deutschland", isin: "DE0008490962", tickerOrientatiu: "DWS Germany", gestora: "DWS", categoria: "Alemanya", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "unavailable", ongoingCost: 1.4 },
+  { id: "fund-france", nom: "Amundi France Equity", isin: "FR0000974147", tickerOrientatiu: "Amundi France", gestora: "Amundi", categoria: "França", tipus: "Fons actiu", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Satellite", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "unavailable", ongoingCost: 1.1 },
+  { id: "fund-euro-bond", nom: "M&G European Corporate Bond", isin: "GB0030932676", tickerOrientatiu: "M&G Euro Bond", gestora: "M&G", categoria: "Renda fixa europea", tipus: "Fons actiu", risc: "Baix", perfils: ["Conservador", "Moderat"], rol: "Defensive/liquidity", blocActiu: "Renda fixa", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.55 },
+  { id: "fund-money-market", nom: "Amundi Euro Liquidity", isin: "FR0010510800", tickerOrientatiu: "Amundi Monetari", gestora: "Amundi", categoria: "Monetaris", tipus: "Fons monetari", risc: "Baix", perfils: ["Conservador", "Moderat", "Dinàmic"], rol: "Defensive/liquidity", blocActiu: "Liquiditat", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.2 },
+  { id: "fund-health", nom: "Candriam Equities L Biotechnology", isin: "LU0108459040", tickerOrientatiu: "Candriam Biotech", gestora: "Candriam", categoria: "Salut / biotecnologia", tipus: "Fons actiu", risc: "Molt alt", perfils: ["Agressiu"], rol: "Thematic/high risk", blocActiu: "Renda variable", currency: "USD", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "unavailable", ongoingCost: 1.55 },
+  { id: "fund-esg", nom: "BNP Paribas Easy MSCI World SRI", isin: "LU1615092217", tickerOrientatiu: "BNP ESG World", gestora: "BNP Paribas AM", categoria: "ESG", tipus: "Fons indexat", risc: "Mitjà", perfils: ["Moderat", "Dinàmic"], rol: "Core", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 0.3 },
+  { id: "fund-small-europe", nom: "Threadneedle European Smaller Companies", isin: "GB0030433972", tickerOrientatiu: "Threadneedle EU Small", gestora: "Columbia Threadneedle", categoria: "Small caps europees", tipus: "Fons actiu", risc: "Alt", perfils: ["Dinàmic", "Agressiu"], rol: "Satellite", blocActiu: "Renda variable", currency: "EUR", exchange: "FUND", provider: "manual", dataAvailable: false, dataStatus: "pending", ongoingCost: 1.2 },
 ];
 
 export const PROFILE_SELECTION: Record<Perfil, Array<{ id: string; percentatge: number; criteri: string; justificacio: string }>> = {
@@ -159,6 +173,8 @@ export function productesPerPerfil(perfil: Perfil): ProducteCartera[] {
       tickerYahoo: producte.tickerYahoo,
       tickerFMP: producte.tickerFMP,
       gestora: producte.gestora,
+      dataSource: producte.dataSource,
+      comentariFiabilitat: producte.comentariFiabilitat,
       categoria: producte.categoria,
       tipus: producte.tipus,
       gestio: gestioPerTipus(producte),
