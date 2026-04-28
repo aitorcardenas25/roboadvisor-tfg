@@ -1553,6 +1553,349 @@ function ProfessionalCharts({
   );
 }
 
+function SectionBadge({ text }: { text: string }) {
+  return (
+    <span style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: COLORS.primaryDark, background: COLORS.primaryLight, padding: "4px 10px", borderRadius: 999, marginBottom: 8 }}>
+      {text}
+    </span>
+  );
+}
+
+function ExecutiveSummary({
+  result,
+}: {
+  result: ClientResult;
+}) {
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, padding: 18 }}>
+      <SectionBadge text="Resum executiu" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <MiniMetric title="Perfil final" value={result.perfilFinal} />
+        <MiniMetric title="Score total" value={`${result.scoreFinal}/100`} />
+        <MiniMetric title="Objectiu" value={String(result.row.objectiuPrincipal || "-")} />
+        <MiniMetric title="Horitzó" value={`${result.row.horitzoAnys || "-"} anys`} />
+        <MiniMetric title="Asset mix" value={`${result.cartera.rendaVariable}/${result.cartera.rendaFixa}/${result.cartera.liquiditat}/${result.cartera.alternatius}`} />
+      </div>
+      <div style={{ marginTop: 14, color: COLORS.textMedium, lineHeight: 1.7, fontSize: 14 }}>
+        <strong>Recomanació principal:</strong>
+        <ul style={{ margin: "8px 0 0 18px" }}>
+          <li>La cartera prioritza coherència entre capacitat de risc, horitzó i tolerància psicològica.</li>
+          <li>El pes principal recau en actius core diversificats, complementats amb satèl·lits selectius.</li>
+          <li>Es manté control de volatilitat mitjançant bloc defensiu i reequilibris periòdics.</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function MonteCarloBlock({ mc }: { mc: ReturnType<typeof simulacioMonteCarlo> }) {
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, padding: 18 }}>
+      <SectionBadge text="Simulació Monte Carlo" />
+      <p style={paragraph}>
+        La simulació Monte Carlo permet estimar diferents trajectòries possibles d’una cartera incorporant rendibilitat esperada i volatilitat.
+        No prediu el futur, però ajuda a visualitzar el risc i la incertesa.
+      </p>
+      <div style={{ height: "clamp(220px, 52vw, 320px)" }}>
+        <ResponsiveContainer>
+          <LineChart data={mc.trajectoria}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="any" />
+            <YAxis tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`} />
+            <Tooltip formatter={(v) => formatEuro(Number(v))} />
+            <Legend />
+            <Line type="monotone" dataKey="pessimista" stroke="#b1412c" dot={false} strokeWidth={2} />
+            <Line type="monotone" dataKey="esperat" stroke="#0c2d2a" dot={false} strokeWidth={3} />
+            <Line type="monotone" dataKey="optimista" stroke="#1a6b4a" dot={false} strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <SimpleTable
+        headers={["Mètrica", "Resultat"]}
+        rows={[
+          ["Percentil P10 (final)", formatEuro(mc.rang.min)],
+          ["Percentil P50 (final)", formatEuro(mc.valorFinalEsperat)],
+          ["Percentil P90 (final)", formatEuro(mc.rang.max)],
+          ["Probabilitat estimada d’assolir l’objectiu", `${mc.probAssolir}%`],
+          ["Valor final estimat de cartera", formatEuro(mc.valorFinalEsperat)],
+          ["Rang de resultats possibles", `${formatEuro(mc.rang.min)} - ${formatEuro(mc.rang.max)}`],
+        ]}
+      />
+    </div>
+  );
+}
+
+function ProductGroups({ alternatives }: { alternatives: UniverseProduct[] }) {
+  const groups: Array<{ title: string; filter: (p: UniverseProduct) => boolean }> = [
+    { title: "Alternatives complementàries", filter: (p) => p.rol === "Satellite" || p.rol === "Core" },
+    { title: "Productes temàtics d’alt risc", filter: (p) => p.rol === "Thematic/high risk" },
+    { title: "Productes de dividends / renda", filter: (p) => p.rol === "Income/dividend" },
+    { title: "Productes defensius / liquiditat", filter: (p) => p.rol === "Defensive/liquidity" },
+  ];
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      {groups.map((group) => {
+        const list = alternatives.filter(group.filter).slice(0, 5);
+        if (!list.length) return null;
+        return (
+          <div key={group.title}>
+            <h4 style={{ margin: "0 0 8px 0", color: COLORS.primaryDark }}>{group.title}</h4>
+            <SimpleTable headers={["Producte", "ISIN", "Categoria", "Tipus", "Risc", "Rol"]} rows={list.map((a) => [a.nom, a.isin, a.categoria, a.tipus, <RiskBadge key={`${a.id}-${group.title}`} risc={a.risc} />, a.rol])} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FinalConclusion({ result }: { result: ClientResult }) {
+  const tesi =
+    result.perfilFinal === "Conservador"
+      ? "Aquesta proposta prioritza preservació de capital i estabilitat."
+      : result.perfilFinal === "Moderat"
+      ? "Aquesta proposta equilibra creixement i control de volatilitat."
+      : result.perfilFinal === "Dinàmic"
+      ? "Aquesta proposta busca creixement sostingut assumint volatilitat moderada-alta."
+      : "Aquesta proposta maximitza potencial de creixement assumint elevada volatilitat.";
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, background: "#fafcfb", padding: 18 }}>
+      <SectionBadge text="Conclusió final" />
+      <ul style={{ margin: 0, paddingLeft: 20, color: COLORS.textMedium, lineHeight: 1.8, fontSize: 14 }}>
+        <li>Perfil detectat: <strong>{result.perfilFinal}</strong>. {tesi}</li>
+        <li>Encaix de cartera: combina actius core i satèl·lits en proporcions coherents amb la teva tolerància i capacitat de risc.</li>
+        <li>Riscos principals: volatilitat de mercat, possibles drawdowns temporals i desviacions respecte retorn esperat.</li>
+        <li>Horitzó recomanat: mínim {Math.max(3, Number(result.row.horitzoAnys || 5))} anys per maximitzar la consistència de la proposta.</li>
+        <li>Revisió recomanada: trimestral i sempre que canviï situació personal, objectiu o tolerància al risc.</li>
+        <li>Recordatori: és una proposta acadèmica; la simulació no garanteix resultats futurs.</li>
+      </ul>
+    </div>
+  );
+}
+
+function BenchmarkCompostBox({ benchmark }: { benchmark: ReturnType<typeof benchmarkCompost> }) {
+  if (!benchmark.composicio.length) {
+    return <div style={highlightBox}>Benchmark compost pendent: dades de mercat encara no validades per al perfil seleccionat.</div>;
+  }
+  return (
+    <div style={{ border: `1px solid ${COLORS.border}`, background: COLORS.white, padding: 18 }}>
+      <h3 style={sectionTitle}>Benchmark compost per perfil</h3>
+      <p style={paragraph}>
+        El benchmark no és un únic índex; és una combinació ponderada d’índexs/ETFs reals representatius segons perfil de risc. Això millora la comparabilitat entre cartera i mercat de referència.
+      </p>
+      <SimpleTable
+        headers={["Component de benchmark", "Pes", "Rendibilitat anualitzada", "Volatilitat anualitzada"]}
+        rows={benchmark.composicio.map((c) => [c.component, `${c.pes}%`, c.r ? formatPct(c.r) : "-", c.v ? formatPct(c.v) : "-"])}
+      />
+      <div style={{ height: "clamp(220px, 46vw, 280px)", marginTop: 10 }}>
+        <ResponsiveContainer>
+          <BarChart data={benchmark.composicio}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="component" hide />
+            <YAxis />
+            <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
+            <Legend />
+            <Bar dataKey="pes" name="Pes benchmark" fill={COLORS.gold} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div style={{ marginTop: 10, color: COLORS.textMedium, fontSize: 13 }}>
+        <strong>Resultat compost:</strong> Rendibilitat esperada {formatPct(benchmark.rendibilitat)} · Volatilitat estimada {formatPct(benchmark.volatilitat)}.
+      </div>
+    </div>
+  );
+}
+
+function ComparacioCarteraBenchmark({
+  compClasse,
+  taulaComparacio,
+}: {
+  compClasse: Array<{ classe: string; cartera: number; benchmark: number }>;
+  taulaComparacio: string[][];
+}) {
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <p style={paragraph}>
+        La comparació es fa contra un benchmark compost coherent amb el perfil, no contra un únic índex. Això permet avaluar millor si el risc i la rendibilitat esperada de la cartera són consistents.
+      </p>
+      <div style={{ height: "clamp(220px, 48vw, 290px)" }}>
+        <ResponsiveContainer>
+          <BarChart data={compClasse}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="classe" />
+            <YAxis />
+            <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
+            <Legend />
+            <Bar dataKey="cartera" fill={COLORS.primaryDark} name="Cartera" />
+            <Bar dataKey="benchmark" fill={COLORS.gold} name="Benchmark" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <SimpleTable headers={["Mètrica", "Cartera", "Benchmark compost"]} rows={taulaComparacio} />
+    </div>
+  );
+}
+
+function ProfessionalCharts({
+  blocData,
+  productes,
+  backtest,
+  riscReturn,
+  drawdowns,
+  benchmark,
+  correlations,
+  riskContribution,
+}: {
+  blocData: Array<{ bloc: string; pes: number }>;
+  productes: ProducteCartera[];
+  backtest: ReturnType<typeof generarBacktestSimulat>;
+  riscReturn: Array<{ nom: string; risc: number; rendiment: number; pes: number; serie: string }>;
+  drawdowns: Array<{ any: string; carteraDD: number; benchmarkDD: number }>;
+  benchmark: ReturnType<typeof benchmarkCompost>;
+  correlations: Array<{ x: string; y: string; value: number }>;
+  riskContribution: Array<{ nom: string; contribucio: number }>;
+}) {
+  const comparacio = [
+    { serie: "Cartera", rendibilitat: backtest.metrics.rendibilitatAnualitzada, volatilitat: backtest.metrics.volatilitat, drawdown: backtest.metrics.maxDrawdown },
+    { serie: "Benchmark compost", rendibilitat: benchmark.rendibilitat, volatilitat: benchmark.volatilitat, drawdown: backtest.benchmarkMetrics.maxDrawdown },
+  ];
+  const benchmarkPoint = [{ nom: "Benchmark compost", risc: benchmark.volatilitat, rendiment: benchmark.rendibilitat, pes: 30, serie: "Benchmark" }];
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Pes per producte</h4>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
+            <ResponsiveContainer>
+              <BarChart data={productes}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="tickerOrientatiu" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="percentatge" fill={COLORS.primaryDark} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Asset allocation (per bloc d’actiu)</h4>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={blocData} dataKey="pes" nameKey="bloc" innerRadius={45} outerRadius={90} label />
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Comparació cartera vs benchmark</h4>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
+            <ResponsiveContainer>
+              <BarChart data={comparacio}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="serie" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="rendibilitat" fill={COLORS.green} name="Rendibilitat" />
+                <Bar dataKey="volatilitat" fill={COLORS.gold} name="Volatilitat" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Risc vs rendibilitat (productes)</h4>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
+            <ResponsiveContainer>
+              <ScatterChart>
+                <CartesianGrid />
+                <XAxis dataKey="risc" name="Risc" unit="%" />
+                <YAxis dataKey="rendiment" name="Rendiment" unit="%" />
+                <ZAxis dataKey="pes" range={[60, 420]} />
+                <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                <Legend />
+                <Scatter name="Actius cartera" data={riscReturn} fill={COLORS.primaryDark} />
+                <Scatter name="Benchmark compost" data={benchmarkPoint} fill={COLORS.gold} />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+          <p style={{ ...paragraph, marginTop: 8, fontSize: 12.5 }}>
+            Aquest gràfic mostra com la cartera proposada i els seus satèl·lits se situen en relació amb el benchmark compost: més a la dreta implica més volatilitat, més amunt implica major rendibilitat esperada.
+          </p>
+        </div>
+      </div>
+
+      <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+        <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Evolució històrica real (cartera vs benchmark)</h4>
+        <div style={{ height: "clamp(230px, 50vw, 310px)" }}>
+          <ResponsiveContainer>
+            <LineChart data={backtest.data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="any" />
+              <YAxis />
+              <Tooltip formatter={(value) => formatEuro(Number(value))} />
+              <Legend />
+              <Line dataKey="cartera" stroke={COLORS.primaryDark} strokeWidth={3} dot={false} />
+              <Line dataKey="benchmark" stroke={COLORS.gold} strokeWidth={3} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+        <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Drawdown (caiguda des de màxim)</h4>
+        <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
+          <ResponsiveContainer>
+            <AreaChart data={drawdowns}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="any" />
+              <YAxis tickFormatter={(v) => `${v.toFixed(0)}%`} />
+              <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
+              <Legend />
+              <Area type="monotone" dataKey="carteraDD" stroke={COLORS.primaryDark} fill="#d6e7e1" />
+              <Area type="monotone" dataKey="benchmarkDD" stroke={COLORS.gold} fill="#f2e9da" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {!!riskContribution.length && (
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Contribució de risc per actiu</h4>
+          <div style={{ height: "clamp(220px, 48vw, 280px)" }}>
+            <ResponsiveContainer>
+              <BarChart data={riskContribution}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="nom" />
+                <YAxis tickFormatter={(v) => `${Number(v).toFixed(0)}%`} />
+                <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
+                <Bar dataKey="contribucio" fill={COLORS.danger} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {!!correlations.length && (
+        <div style={{ border: `1px solid ${COLORS.border}`, padding: 12 }}>
+          <h4 style={{ margin: "0 0 10px 0", color: COLORS.primaryDark }}>Matriu de correlacions (parelles principals)</h4>
+          <SimpleTable
+            headers={["Actiu A", "Actiu B", "Correlació"]}
+            rows={correlations.slice(0, 12).map((c) => [c.x, c.y, c.value.toFixed(2)])}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CriteriaGrid() {
   const criteris = [
     ["Diversificació", "Exposició a diferents geografies, sectors, capitalitzacions i classes d’actiu."],
