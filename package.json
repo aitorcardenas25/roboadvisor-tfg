@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "fix:benchmark-dup": "node scripts/fix-benchmark-duplicate.mjs"
   },
   "dependencies": {
     "mammoth": "^1.12.0",
